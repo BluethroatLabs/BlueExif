@@ -27,6 +27,10 @@ import { Icon, Mark } from './Icon';
 import { SENS, SENS_ORDER } from './sensitivity';
 
 const LABS_URL = 'https://bluethroatlabs.com/';
+// The hosted site is the single-file build and serves the same page as
+// ./blueexif.html for download (infra/deploy.sh). Not offered in that downloaded
+// copy (file://) or in the multi-file build, which ships no such file.
+const OFFLINE_EDITION = import.meta.env.MODE === 'single' && location.protocol !== 'file:';
 
 // ------------------------------------------------------------------ theme
 
@@ -127,6 +131,11 @@ export function Footer() {
         <button type="button" onClick={() => setLicences(true)}>
           Font licences
         </button>
+        {OFFLINE_EDITION && (
+          <a href="./blueexif.html" download="blueexif.html">
+            Offline edition ↓
+          </a>
+        )}
         <a href="https://bluemask.bluethroatlabs.com/" target="_blank" rel="noopener noreferrer">
           BlueMask
         </a>

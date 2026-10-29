@@ -30,8 +30,9 @@ also shown in the app under “Font licences”).
 - No server, no accounts, no analytics. The production build ships a
   `Content-Security-Policy` that only allows the app's own origin, so the page
   cannot send your files anywhere even by accident.
-- A service worker caches the app, so it keeps working offline after the first
-  visit; page loads are network-first, so new versions are picked up at once.
+- The hosted site is the single-file build (below): save the page, or download
+  `/blueexif.html`, and that one file runs offline from disk. The multi-file
+  `npm run build` instead caches itself with a network-first service worker.
 - Processing runs in a Web Worker; large audio/video payloads are carried over
   as zero-copy `Blob` slices instead of being loaded into memory.
 - Writers rebuild containers instead of appending: e.g. PDFs are fully
@@ -128,3 +129,30 @@ contract (`src/engine/core/types.ts`). Tests verify every writer with an
 independent oracle — [ExifTool](https://exiftool.org) compiled to WebAssembly
 — plus ffmpeg/ffprobe decode checks for media, and assert that stripped files
 no longer contain marker strings planted in the fixtures.
+
+## Deployment
+
+The single-file `blueexif.html` is served from an Azure Storage static website
+behind Azure Front Door (`infra/main.bicep`), at `blueexif.bluethroatlabs.com`:
+as `/`, and as `/blueexif.html` with `Content-Disposition: attachment` (and
+`noindex`) for downloading — the footer's “Offline edition ↓” link, hidden in
+the downloaded copy. The Front Door rule set adds `Referrer-Policy`,
+`X-Content-Type-Options`, `X-Frame-Options`, `Permissions-Policy` and
+`frame-ancestors 'none'`; the rest of the Content-Security-Policy ships in the
+page.
+
+```bash
+just deploy   # npm ci, then infra/deploy.sh: build:single, deploy storage, upload, deploy Front Door
+```
+
+The script creates `rg-blueexif-wehi-sandbox` if it is missing, uploads both
+copies as `must-revalidate`, and removes every other blob in `$web`.
+`SUBSCRIPTION`, `RG`, `PREFIX` and `LOCATION` override the defaults.
+On first deploy it prints the CNAME and `_dnsauth` TXT records the custom domain
+needs before Front Door can issue its certificate.
+
+GitHub Actions (`.github/workflows/ci.yml`) typechecks, runs the tests, builds,
+and deploys from `main` over OIDC. `./infra/setup-github-oidc.sh` creates the
+Entra app, its federated credential and Contributor role on the resource group,
+and sets the `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`
+repository secrets.
