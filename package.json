@@ -1,0 +1,36 @@
+{
+  "name": "blueexif",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Client-side metadata viewer, editor and stripper for images, audio, video and documents.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc --noEmit",
+    "fixtures": "node scripts/make-fixtures.mjs",
+    "sample": "node scripts/make-sample.mjs",
+    "icons": "node scripts/make-icons.mjs",
+    "build:single": "tsc --noEmit && vite build --mode single"
+  },
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.4.299",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.5",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "@uswriting/exiftool": "^1.0.9",
+    "@vitejs/plugin-react": "^6.1.2",
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4",
+    "vitest": "^5.0.5"
+  }
+}
