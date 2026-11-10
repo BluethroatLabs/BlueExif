@@ -2332,6 +2332,35 @@ dialog.dialog::backdrop {
   font-weight: 600;
 }
 
+.dialog-body > .about-kicker {
+  margin: 0 0 6px;
+  color: var(--quiet);
+  font-size: var(--text-micro);
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dialog-body > p + .about-kicker {
+  margin-top: 22px;
+}
+
+.dialog-body > .about-tip {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  margin-top: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--rule);
+  background: var(--stage);
+  font-size: var(--text-note);
+}
+
+.about-tip > .icon {
+  flex: none;
+  margin-top: 3px;
+}
+
 .dialog-body > .dialog-warning {
   margin-top: 14px;
   color: var(--suspicious-fg);

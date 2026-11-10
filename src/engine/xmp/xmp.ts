@@ -54,6 +54,8 @@ export const NS: Record<string, string> = {
   pdf: 'http://ns.adobe.com/pdf/1.3/',
   pdfx: 'http://ns.adobe.com/pdfx/1.3/',
   pdfaid: 'http://www.aiim.org/pdfa/ns/id/',
+  pdfuaid: 'http://www.aiim.org/pdfua/ns/id/',
+  pdfaExtension: 'http://www.aiim.org/pdfa/ns/extension/',
   xmpDM: 'http://ns.adobe.com/xmp/1.0/DynamicMedia/',
   xmpTPg: 'http://ns.adobe.com/xap/1.0/t/pg/',
   xmpNote: 'http://ns.adobe.com/xmp/note/',
@@ -92,6 +94,8 @@ const NS_LABEL: Record<string, string> = {
   pdf: 'PDF (XMP)',
   pdfx: 'PDF custom',
   pdfaid: 'PDF/A',
+  pdfuaid: 'PDF/UA',
+  pdfaExtension: 'PDF/A extensions',
   xmpDM: 'Dynamic media',
   lr: 'Lightroom',
   GPano: 'Google panorama',
@@ -101,6 +105,11 @@ const NS_LABEL: Record<string, string> = {
   'mwg-rs': 'Regions (faces)',
   MicrosoftPhoto: 'Microsoft Photo',
   digiKam: 'digiKam',
+  xmpTPg: 'Paged text',
+  xmpNote: 'XMP note',
+  cc: 'Creative Commons',
+  dcterms: 'DC Terms',
+  c2pa: 'Content Credentials',
 };
 
 export type XmpKind = 'simple' | 'bag' | 'seq' | 'alt' | 'complex';

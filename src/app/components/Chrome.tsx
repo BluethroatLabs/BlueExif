@@ -16,6 +16,7 @@ import {
   pickFiles,
   setAbout,
   setConfirmClose,
+  setGroupAbout,
   setLicences,
   setStripOptions,
   stripFiles,
@@ -23,6 +24,7 @@ import {
   type Toast,
 } from '../store';
 import { afterRender } from './afterRender';
+import { aboutGroup } from './groupAbout';
 import { Icon, Mark } from './Icon';
 import { SENS, SENS_ORDER } from './sensitivity';
 
@@ -529,6 +531,48 @@ export function AboutDialog() {
         (such as incremental PDF updates) do not linger. Review the result after saving: BlueExif re-reads the new file
         and shows exactly what remains.
       </p>
+    </Dialog>
+  );
+}
+
+export function GroupAboutDialog() {
+  const group = useStore((s) => s.groupAbout);
+  // keep the last group while the dialog closes so its content does not flash empty
+  const last = useRef(group);
+  if (group) last.current = group;
+  const g = group ?? last.current;
+  const about = g ? aboutGroup(g) : null;
+  const close = () => setGroupAbout(null);
+  return (
+    <Dialog
+      open={!!group}
+      onClose={close}
+      labelId="group-about-title"
+      title={g ? `About ${g.label}` : 'About this section'}
+      actions={
+        <button className="btn primary" type="button" data-autofocus onClick={close}>
+          Got it
+        </button>
+      }
+    >
+      {about && g && (
+        <>
+          <h3 className="about-kicker">What’s in this section</h3>
+          <p>{about.what}</p>
+          {about.tip && (
+            <p className="about-tip">
+              <Icon name="info" size="sm" />
+              <span>{about.tip}</span>
+            </p>
+          )}
+          {about.standard && about.standard.name !== g.label && (
+            <>
+              <h3 className="about-kicker">What is {about.standard.name}?</h3>
+              <p>{about.standard.text}</p>
+            </>
+          )}
+        </>
+      )}
     </Dialog>
   );
 }

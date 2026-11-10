@@ -6,6 +6,7 @@ import {
   DropOverlay,
   EmptyWorkspace,
   Footer,
+  GroupAboutDialog,
   LicencesDialog,
   Productbar,
   StripDialog,
@@ -71,6 +72,7 @@ export function App() {
       <StripDialog />
       <ConfirmCloseDialog />
       <AboutDialog />
+      <GroupAboutDialog />
       <LicencesDialog />
       <Toasts />
     </>

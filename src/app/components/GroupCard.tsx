@@ -2,7 +2,7 @@ import { memo, useCallback, useEffect, useId, useRef, useState } from 'react';
 import type { Edit, Edits, Field, FieldGroup, FieldSpec, FieldValue, GpsValue, ImageValue, Sensitivity } from '../../engine/core/types';
 import { groupKey } from '../../engine/core/types';
 import { describeImage, displayDate, formatGps } from '../../engine/core/fields';
-import { copyEditToAll, removeGroup, restoreGroup, setEdit, setInvalid, toast, useStore } from '../store';
+import { copyEditToAll, removeGroup, restoreGroup, setEdit, setGroupAbout, setInvalid, toast, useStore } from '../store';
 import { Editor, ImageView, RawView, emptyValue, isEmptyValue } from './editors';
 import { afterRender } from './afterRender';
 import { Icon } from './Icon';
@@ -328,6 +328,16 @@ export function GroupCard({
             </span>
           </button>
         </h4>
+        <button
+          className="icon-btn group-about"
+          type="button"
+          aria-label={`About ${group.label}`}
+          title={`What is ${group.label}?`}
+          aria-haspopup="dialog"
+          onClick={() => setGroupAbout(group)}
+        >
+          <Icon name="info" size="sm" />
+        </button>
         {(canAdd || canRemove) && (
           <div className="group-actions">
             {canAdd && <AddFieldMenu fileId={fileId} group={group} edits={edits} />}

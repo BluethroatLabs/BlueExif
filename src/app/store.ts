@@ -66,6 +66,8 @@ export interface State {
   toasts: Toast[];
   strip: StripRequest | null;
   about: boolean;
+  /** The section whose "About" dialog is open. */
+  groupAbout: FieldGroup | null;
   licences: boolean;
   confirmClose: boolean;
   stripOptions: StripOptions;
@@ -81,6 +83,7 @@ let state: State = {
   toasts: [],
   strip: null,
   about: false,
+  groupAbout: null,
   licences: false,
   confirmClose: false,
   stripOptions: loadStripOptions(),
@@ -298,6 +301,10 @@ export async function loadSample(): Promise<void> {
 
 export function setAbout(open: boolean): void {
   set({ about: open });
+}
+
+export function setGroupAbout(group: FieldGroup | null): void {
+  set({ groupAbout: group });
 }
 
 export function setLicences(open: boolean): void {
