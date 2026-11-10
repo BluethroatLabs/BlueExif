@@ -8,6 +8,7 @@ import {
   Footer,
   GroupAboutDialog,
   LicencesDialog,
+  OfflineDialog,
   Productbar,
   StripDialog,
   Toasts,
@@ -73,6 +74,7 @@ export function App() {
       <ConfirmCloseDialog />
       <AboutDialog />
       <GroupAboutDialog />
+      <OfflineDialog />
       <LicencesDialog />
       <Toasts />
     </>

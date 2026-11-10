@@ -18,6 +18,7 @@ import {
   setConfirmClose,
   setGroupAbout,
   setLicences,
+  setOffline,
   setStripOptions,
   stripFiles,
   useStore,
@@ -30,9 +31,13 @@ import { SENS, SENS_ORDER } from './sensitivity';
 
 const LABS_URL = 'https://bluethroatlabs.com/';
 // The hosted site is the single-file build and serves the same page as
-// ./blueexif.html for download (infra/deploy.sh). Not offered in that downloaded
-// copy (file://) or in the multi-file build, which ships no such file.
-const OFFLINE_EDITION = import.meta.env.MODE === 'single' && location.protocol !== 'file:';
+// ./blueexif.html for download (infra/deploy.sh). The downloaded copy (file://)
+// says so instead of offering itself again; the multi-file build ships no such
+// file, so it offers nothing.
+const SINGLE_FILE = import.meta.env.MODE === 'single';
+const IS_OFFLINE_COPY = SINGLE_FILE && location.protocol === 'file:';
+const OFFLINE_EDITION = SINGLE_FILE && !IS_OFFLINE_COPY;
+const OFFLINE_FILE = 'blueexif.html';
 
 // ------------------------------------------------------------------ theme
 
@@ -85,6 +90,11 @@ export function Topbar() {
         <button type="button" onClick={() => setAbout(true)}>
           How it works
         </button>
+        {SINGLE_FILE && (
+          <button type="button" onClick={() => setOffline(true)} aria-haspopup="dialog">
+            {IS_OFFLINE_COPY ? 'Offline edition ✓' : 'Offline edition'}
+          </button>
+        )}
         <button className="theme-toggle" type="button" onClick={toggle} aria-label={label} title={label}>
           <Icon name={theme === 'light' ? 'moon' : 'sun'} />
         </button>
@@ -134,10 +144,11 @@ export function Footer() {
           Font licences
         </button>
         {OFFLINE_EDITION && (
-          <a href="./blueexif.html" download="blueexif.html">
+          <a href={`./${OFFLINE_FILE}`} download={OFFLINE_FILE}>
             Offline edition ↓
           </a>
         )}
+        {IS_OFFLINE_COPY && <span className="footer-note">You are using the offline edition</span>}
         <a href="https://bluemask.bluethroatlabs.com/" target="_blank" rel="noopener noreferrer">
           BlueMask
         </a>
@@ -530,6 +541,106 @@ export function AboutDialog() {
         <strong>Old data really goes away.</strong> Writers rebuild files instead of appending, so earlier revisions
         (such as incremental PDF updates) do not linger. Review the result after saving: BlueExif re-reads the new file
         and shows exactly what remains.
+      </p>
+    </Dialog>
+  );
+}
+
+/** The browser's own guess; it cannot see a captive portal or a firewall. */
+function useOnline(active: boolean): boolean {
+  const [online, setOnline] = useState(() => navigator.onLine);
+  useEffect(() => {
+    if (!active) return;
+    const update = () => setOnline(navigator.onLine);
+    update();
+    window.addEventListener('online', update);
+    window.addEventListener('offline', update);
+    return () => {
+      window.removeEventListener('online', update);
+      window.removeEventListener('offline', update);
+    };
+  }, [active]);
+  return online;
+}
+
+export function OfflineDialog() {
+  const open = useStore((s) => s.offline);
+  const hasFiles = useStore((s) => s.files.length > 0);
+  const online = useOnline(open);
+  const close = () => setOffline(false);
+  const connection = (
+    <p className="connection-hint" role="status">
+      <span className={`connection-dot${online ? ' on' : ''}`} aria-hidden="true" />
+      {online
+        ? 'Your browser reports a network connection. This is only a hint — check your device’s own controls.'
+        : 'Your browser reports no network connection. This is only a hint — check your device’s own controls.'}
+    </p>
+  );
+
+  if (IS_OFFLINE_COPY) {
+    return (
+      <Dialog
+        open={open}
+        onClose={close}
+        labelId="offline-title"
+        title="You’re using the offline edition"
+        actions={
+          <button className="btn primary" type="button" data-autofocus onClick={close}>
+            Got it
+          </button>
+        }
+      >
+        <p>
+          This copy of BlueExif runs entirely from the HTML file on your device: the app, the metadata engine and the
+          PDF viewer are all inside it, and its security policy forbids every network connection.
+        </p>
+        <p>Disconnect before opening private files if you want to be certain nothing can leave this device.</p>
+        {connection}
+      </Dialog>
+    );
+  }
+
+  return (
+    <Dialog
+      open={open}
+      onClose={close}
+      labelId="offline-title"
+      title="Use BlueExif offline"
+      actions={
+        <>
+          <button className="btn" type="button" onClick={close}>
+            Continue on this page
+          </button>
+          <a className="btn primary" href={`./${OFFLINE_FILE}`} download={OFFLINE_FILE} data-autofocus onClick={close}>
+            <Icon name="download" size="sm" />
+            Download offline edition
+          </a>
+        </>
+      }
+    >
+      <p>
+        <strong>How do you know BlueExif isn’t uploading your files?</strong> Check for yourself: use it with your device
+        disconnected. With no network connection, the page has nowhere to send your files.
+      </p>
+      <ol className="step-list">
+        <li>
+          <strong>Download the offline edition.</strong> Everything — the app, the metadata engine and the PDF viewer —
+          is in one HTML file.
+        </li>
+        <li>
+          <strong>Disconnect before opening your files.</strong> Turn off Wi-Fi and mobile data; unplug Ethernet.
+        </li>
+        <li>
+          <strong>Open the HTML file in your browser.</strong> Drop in your files, clean them and save the results. Close
+          it before reconnecting.
+        </li>
+      </ol>
+      {connection}
+      {hasFiles && (
+        <p className="dialog-warning">Files already open on this page stay here; reopen them in the offline edition.</p>
+      )}
+      <p className="control-hint">
+        Working offline shows that no server is needed. It does not vouch for the code or for your device.
       </p>
     </Dialog>
   );

@@ -68,6 +68,7 @@ export interface State {
   about: boolean;
   /** The section whose "About" dialog is open. */
   groupAbout: FieldGroup | null;
+  offline: boolean;
   licences: boolean;
   confirmClose: boolean;
   stripOptions: StripOptions;
@@ -84,6 +85,7 @@ let state: State = {
   strip: null,
   about: false,
   groupAbout: null,
+  offline: false,
   licences: false,
   confirmClose: false,
   stripOptions: loadStripOptions(),
@@ -305,6 +307,10 @@ export function setAbout(open: boolean): void {
 
 export function setGroupAbout(group: FieldGroup | null): void {
   set({ groupAbout: group });
+}
+
+export function setOffline(open: boolean): void {
+  set({ offline: open });
 }
 
 export function setLicences(open: boolean): void {

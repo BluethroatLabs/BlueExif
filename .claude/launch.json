@@ -1,0 +1,43 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "blueexif-dev",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5178",
+        "--strictPort"
+      ],
+      "port": 5178
+    },
+    {
+      "name": "blueexif-dist",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "preview",
+        "--port",
+        "5180",
+        "--strictPort"
+      ],
+      "port": 5180
+    },
+    {
+      "name": "single-file",
+      "runtimeExecutable": "python3",
+      "runtimeArgs": [
+        "-I",
+        "-m",
+        "http.server",
+        "5181",
+        "--bind",
+        "127.0.0.1",
+        "--directory",
+        "/Users/wehi/projects/BlueExif/dist-single"
+      ],
+      "port": 5181
+    }
+  ]
+}

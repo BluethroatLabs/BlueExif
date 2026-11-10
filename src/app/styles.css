@@ -925,6 +925,14 @@ main {
   cursor: pointer;
 }
 
+.footer-links .footer-note {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--muted);
+  font-size: var(--text-note);
+}
+
 .footer-links a:hover,
 .footer-links button:hover {
   color: var(--ink);
@@ -2359,6 +2367,71 @@ dialog.dialog::backdrop {
 .about-tip > .icon {
   flex: none;
   margin-top: 3px;
+}
+
+.step-list {
+  display: grid;
+  gap: 10px;
+  margin: 18px 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.step-list > li {
+  position: relative;
+  padding: 12px 14px 12px 50px;
+  border: 1px solid var(--rule);
+  color: var(--muted);
+  font-size: var(--text-note);
+  line-height: 1.55;
+  counter-increment: step;
+}
+
+.step-list > li::before {
+  content: counter(step);
+  position: absolute;
+  top: 12px;
+  left: 14px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--strong-rule);
+  color: var(--ink);
+  font: 500 var(--text-micro) / 1 var(--mono);
+}
+
+.step-list strong {
+  display: block;
+  color: var(--ink);
+  font-size: var(--text-copy);
+}
+
+.dialog-body > .connection-hint {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  margin-top: 14px;
+  font-size: var(--text-note);
+}
+
+.connection-dot {
+  flex: none;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--clean-fg);
+}
+
+.connection-dot.on {
+  background: var(--suspicious-fg);
+}
+
+.dialog-body > .control-hint {
+  margin-top: 14px;
+  color: var(--quiet);
+  font-size: var(--text-note);
 }
 
 .dialog-body > .dialog-warning {
