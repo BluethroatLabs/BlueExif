@@ -1,10 +1,11 @@
 # BlueExif tasks; `just` lists them.
 #
 #   just deploy   — npm ci, then infra/deploy.sh: build the single-file
-#                   blueexif.html, deploy storage, upload it, deploy Front Door
+#                   blueexif.html, deploy its storage in BlueMask's group,
+#                   upload it, add it to the shared Front Door profile
 #
-# SUBSCRIPTION, RG, PREFIX and LOCATION in the environment override the
-# defaults in infra/deploy.sh, e.g. `RG=rg-other just deploy`.
+# SUBSCRIPTION, RG, PREFIX, LOCATION and DEPLOY_FRONT_DOOR in the environment
+# override the defaults in infra/deploy.sh, e.g. `DEPLOY_FRONT_DOOR=false just deploy`.
 
 set shell := ["bash", "-euo", "pipefail", "-c"]
 

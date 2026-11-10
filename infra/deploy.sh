@@ -1,32 +1,25 @@
 #!/usr/bin/env bash
-# Build the single-file blueexif.html, publish it to a storage static website,
-# then put Front Door in front. Needs Node dependencies installed (npm ci) and
-# an az login.
+# Build the single-file blueexif.html, publish it to its own storage static
+# website in BlueMask's resource group, then add it to the Front Door profile
+# the Bluethroat sites share (rg-blueskills-wehi-aci-sandbox). Needs Node
+# dependencies installed (npm ci), an az login, and Contributor on both groups;
+# with DEPLOY_FRONT_DOOR=false only BlueMask's group.
 #
 #   ./infra/deploy.sh
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SUBSCRIPTION="${SUBSCRIPTION:-1e238434-310b-4bcd-ab1f-a9381d170243}"
-RG="${RG:-rg-blueexif-wehi-sandbox}"
+RG="${RG:-rg-bluemask-wehi-sandbox}"
 PREFIX="${PREFIX:-blueexif}"
 LOCATION="${LOCATION:-centralindia}"
+DEPLOY_FRONT_DOOR="${DEPLOY_FRONT_DOOR:-true}"
 DEPLOYMENT="${PREFIX}-static"
 
 az account set --subscription "$SUBSCRIPTION"
 
 echo "Building dist-single/blueexif.html..."
 npm --prefix "$ROOT" run build:single
-
-if [[ "$(az group exists --name "$RG")" != "true" ]]; then
-  # Same tags as the other Bluethroat sandbox groups; cloud-sweep=keep spares it from cleanup.
-  echo "Creating resource group ${RG}..."
-  az group create \
-    --name "$RG" \
-    --location "$LOCATION" \
-    --tags active=true cloud-sweep=keep owner=wehi project="$PREFIX" \
-    --output none
-fi
 
 deploy_storage() {
   az deployment group create \
@@ -89,9 +82,12 @@ done < <(az storage blob list "${AUTH[@]}" --container-name '$web' --query '[].n
 echo "Checking origin ${ORIGIN_URL}..."
 curl -fsS -o /dev/null --max-time 30 "${ORIGIN_URL}"
 
-echo "Deploying Front Door..."
-fd_err="$(mktemp)"
-set +e
+if [[ "$DEPLOY_FRONT_DOOR" != "true" ]]; then
+  echo "Skipping Front Door (DEPLOY_FRONT_DOOR=${DEPLOY_FRONT_DOOR}). Origin: ${ORIGIN_URL}"
+  exit 0
+fi
+
+echo "Adding ${PREFIX} to the shared Front Door profile..."
 FD_OUTPUTS="$(az deployment group create \
   --resource-group "$RG" \
   --name "$DEPLOYMENT" \
@@ -101,35 +97,7 @@ FD_OUTPUTS="$(az deployment group create \
     location="$LOCATION" \
     deployFrontDoor=true \
   --query "properties.outputs" \
-  --output json 2>"$fd_err")"
-FD_STATUS=$?
-set -e
-
-if [[ "$FD_STATUS" -ne 0 ]]; then
-  cat "$fd_err" >&2
-  rm -f "$fd_err"
-  echo
-  echo "Front Door was blocked. Storage origin is live:"
-  echo "  ${ORIGIN_URL}"
-  echo
-  echo "If a policy on ${RG} denies Microsoft.Cdn, ask its owner to allow:"
-  echo
-  cat <<'EOF'
-  Microsoft.Cdn/profiles
-  Microsoft.Cdn/profiles/afdendpoints
-  Microsoft.Cdn/profiles/afdendpoints/routes
-  Microsoft.Cdn/profiles/customdomains
-  Microsoft.Cdn/profiles/origingroups
-  Microsoft.Cdn/profiles/origingroups/origins
-  Microsoft.Cdn/profiles/rulesets
-  Microsoft.Cdn/profiles/rulesets/rules
-
-BlueExif is a static site on Microsoft.Storage; Front Door profiles use
-location "global". Contributor on the resource group is enough to deploy them.
-EOF
-  exit 1
-fi
-rm -f "$fd_err"
+  --output json)"
 
 read_output() {
   python3 -c 'import json,sys; print(json.loads(sys.argv[1])[sys.argv[2]]["value"])' "$FD_OUTPUTS" "$1"
@@ -139,12 +107,14 @@ FD_HOST="$(read_output frontDoorHostName)"
 CUSTOM_HOST="$(read_output customDomainHostName)"
 DNS_TOKEN="$(read_output customDomainValidationToken)"
 
+# A new endpoint answered 404 for about 25 minutes before the edge had its
+# config; once it exists, later deploys pass this check at once.
 echo "Waiting for Front Door to serve ${FD_URL}..."
-for _ in $(seq 1 18); do
-  if curl -fsS -o /dev/null --max-time 30 "$FD_URL"; then
+for _ in $(seq 1 60); do
+  if curl -fs -o /dev/null --max-time 30 "$FD_URL"; then
     break
   fi
-  sleep 10
+  sleep 30
 done
 curl -fsS -o /dev/null --max-time 45 "$FD_URL"
 echo "Front Door is live: ${FD_URL}"

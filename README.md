@@ -132,11 +132,15 @@ no longer contain marker strings planted in the fixtures.
 
 ## Deployment
 
-The single-file `blueexif.html` is served from an Azure Storage static website
-behind Azure Front Door (`infra/main.bicep`), at `blueexif.bluethroatlabs.com`:
-as `/`, and as `/blueexif.html` with `Content-Disposition: attachment` (and
-`noindex`) for downloading — the footer's “Offline edition ↓” link, hidden in
-the downloaded copy. The Front Door rule set adds `Referrer-Policy`,
+The single-file `blueexif.html` is served from its own Azure Storage static
+website in BlueMask's resource group (`rg-bluemask-wehi-sandbox`,
+`infra/main.bicep`), behind the Front Door profile the Bluethroat sites share
+(`bluepaper-fd` in `rg-blueskills-wehi-aci-sandbox`, `infra/frontdoor.bicep`),
+at `blueexif.bluethroatlabs.com`: as `/`, and as `/blueexif.html` with
+`Content-Disposition: attachment` (and `noindex`) for downloading — the footer's
+“Offline edition ↓” link, hidden in the downloaded copy. BlueExif adds its own
+endpoint, origin group, rule set, custom domain and route to that profile and
+leaves the other sites' alone. Its rule set adds `Referrer-Policy`,
 `X-Content-Type-Options`, `X-Frame-Options`, `Permissions-Policy` and
 `frame-ancestors 'none'`; the rest of the Content-Security-Policy ships in the
 page.
@@ -145,14 +149,17 @@ page.
 just deploy   # npm ci, then infra/deploy.sh: build:single, deploy storage, upload, deploy Front Door
 ```
 
-The script creates `rg-blueexif-wehi-sandbox` if it is missing, uploads both
-copies as `must-revalidate`, and removes every other blob in `$web`.
-`SUBSCRIPTION`, `RG`, `PREFIX` and `LOCATION` override the defaults.
-On first deploy it prints the CNAME and `_dnsauth` TXT records the custom domain
-needs before Front Door can issue its certificate.
+The script uploads both copies as `must-revalidate` and removes every other blob
+in BlueExif's `$web` (its own storage account, so BlueMask's files are never
+touched). It needs Contributor on both resource groups. `SUBSCRIPTION`, `RG`,
+`PREFIX`, `LOCATION` and `DEPLOY_FRONT_DOOR=false` (upload only) override the
+defaults. On first deploy it prints the CNAME and `_dnsauth` TXT records the
+custom domain needs before Front Door can issue its certificate.
 
 GitHub Actions (`.github/workflows/ci.yml`) typechecks, runs the tests, builds,
-and deploys from `main` over OIDC. `./infra/setup-github-oidc.sh` creates the
-Entra app, its federated credential and Contributor role on the resource group,
-and sets the `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID`
-repository secrets.
+and uploads from `main` over OIDC with `DEPLOY_FRONT_DOOR=false`: the CI
+identity has Contributor on BlueMask's group only, never on the shared Front
+Door group, so Front Door changes go out with `just deploy`.
+`./infra/setup-github-oidc.sh` creates the Entra app, its federated credential
+and that role, and sets the `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and
+`AZURE_SUBSCRIPTION_ID` repository secrets.

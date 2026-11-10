@@ -13,8 +13,9 @@ ORG="BluethroatLabs"
 ISSUER="https://token.actions.githubusercontent.com"
 AUDIENCE="api://AzureADTokenExchange"
 BRANCH="main"
-# Run ./infra/deploy.sh once first: it creates the resource group.
-ROWS='blueexif|github-blueexif|rg-blueexif-wehi-sandbox
+# BlueExif's storage lives in BlueMask's group. CI deploys with
+# DEPLOY_FRONT_DOOR=false, so it needs no role on the shared Front Door group.
+ROWS='blueexif|github-blueexif|rg-bluemask-wehi-sandbox
 '
 
 failures=0
