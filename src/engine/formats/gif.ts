@@ -260,7 +260,12 @@ export async function readGif(src: Source): Promise<Metadata> {
     }
   });
   if (g.trailer.length > 16 || g.trailer.some((b) => b !== 0)) {
-    other.push(rawField('gif:trailer', 'Data after image', `${formatBytes(g.trailer.length)} after the end of the image`, { tag: 'after trailer', sensitivity: 'content' }));
+    other.push(
+      rawField('gif:trailer', 'Data after image', `${formatBytes(g.trailer.length)} after the end of the image`, {
+        tag: 'after trailer',
+        sensitivity: 'content',
+      }),
+    );
   }
   if (other.length) groups.push({ id: 'gif.other', label: 'Embedded data', source: 'GIF', fields: other });
 

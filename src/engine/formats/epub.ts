@@ -30,7 +30,19 @@ import {
   type Source,
   type StripOptions,
 } from '../core/types';
-import { createElement, descendants, elements, getAttr, getAttrNs, localName, removeNode, setText, textContent, type XDocument, type XElement } from '../core/xml';
+import {
+  createElement,
+  descendants,
+  elements,
+  getAttr,
+  getAttrNs,
+  localName,
+  removeNode,
+  setText,
+  textContent,
+  type XDocument,
+  type XElement,
+} from '../core/xml';
 import { ZipArchive, rewriteZip } from '../core/zip';
 import { applyMediaEdits, cleanMedia, mediaGroup, type MediaSpec } from './docmedia';
 import { XmlParts, ZIP_EPOCH, dirOf, firstStoredEntry, isNamed, qname, resolvePart } from './docparts';
@@ -264,7 +276,9 @@ function dcGroup(e: Epub): FieldGroup {
     const required = def.local === 'title' || def.local === 'language';
     if (def.list) {
       const values = els.map((x) => textContent(x).trim());
-      fields.push(makeField(spec, values, { display: def.local === 'creator' || def.local === 'contributor' ? personDisplay(e, els) : undefined, removable: !required }));
+      fields.push(
+        makeField(spec, values, { display: def.local === 'creator' || def.local === 'contributor' ? personDisplay(e, els) : undefined, removable: !required }),
+      );
       continue;
     }
     els.forEach((el, i) => {
@@ -280,9 +294,13 @@ function dcGroup(e: Epub): FieldGroup {
   dcElements(e, 'identifier').forEach((el, i) => {
     const unique = !!getAttr(el, 'id') && getAttr(el, 'id') === e.uniqueId;
     fields.push(
-      makeField({ id: `epub:dc:identifier:${i}`, label: identifierLabel(e, el), kind: 'text', sensitivity: unique ? undefined : 'content', tag: 'dc:identifier' }, textContent(el).trim(), {
-        removable: !unique,
-      }),
+      makeField(
+        { id: `epub:dc:identifier:${i}`, label: identifierLabel(e, el), kind: 'text', sensitivity: unique ? undefined : 'content', tag: 'dc:identifier' },
+        textContent(el).trim(),
+        {
+          removable: !unique,
+        },
+      ),
     );
   });
   // dcterms:modified (EPUB 3, required there)
@@ -290,7 +308,11 @@ function dcGroup(e: Epub): FieldGroup {
   const modSpec: FieldSpec = { id: 'epub:meta:dcterms:modified', label: 'Modified', kind: 'datetime', sensitivity: 'time', tag: 'dcterms:modified' };
   if (modified) {
     const p = parseDate(textContent(modified).trim());
-    fields.push(p ? makeField(modSpec, toIso(p), { display: displayDate(toIso(p)), removable: !isEpub3(e) }) : makeField({ ...modSpec, kind: 'text' }, textContent(modified), { removable: !isEpub3(e) }));
+    fields.push(
+      p
+        ? makeField(modSpec, toIso(p), { display: displayDate(toIso(p)), removable: !isEpub3(e) })
+        : makeField({ ...modSpec, kind: 'text' }, textContent(modified), { removable: !isEpub3(e) }),
+    );
   } else if (isEpub3(e)) addable.push(modSpec);
   return { id: 'epub.dc', label: 'Book metadata', source: `EPUB ${isEpub3(e) ? '3' : '2'} OPF`, fields, addable, removable: true };
 }
@@ -320,12 +342,16 @@ function plistDisplay(text: string): string {
 async function otherGroup(e: Epub): Promise<FieldGroup> {
   const fields: Field[] = [];
   for (const m of otherMetas(e)) {
-    fields.push(rawField(m.id, m.key, m.value.length > 160 ? `${m.value.slice(0, 160)}…` : m.value || '(empty)', { sensitivity: metaSensitivity(m.key), tag: 'meta' }));
+    fields.push(
+      rawField(m.id, m.key, m.value.length > 160 ? `${m.value.slice(0, 160)}…` : m.value || '(empty)', { sensitivity: metaSensitivity(m.key), tag: 'meta' }),
+    );
   }
   const cover = coverPath(e);
   if (cover && e.parts.has(cover)) {
     const img = imageValue(await e.zip.read(e.parts.entry(cover)!));
-    fields.push(makeField({ id: 'epub:cover', label: 'Cover image', kind: 'image', tag: cover }, img, { editable: false, removable: false, display: describeImage(img) }));
+    fields.push(
+      makeField({ id: 'epub:cover', label: 'Cover image', kind: 'image', tag: cover }, img, { editable: false, removable: false, display: describeImage(img) }),
+    );
   }
   const ncx = ncxPath(e);
   const ncxDoc = ncx ? await e.parts.tryGet(ncx) : null;
@@ -335,22 +361,41 @@ async function otherGroup(e: Epub): Promise<FieldGroup> {
   }
   const rights = e.parts.has(RIGHTS) ? await e.parts.tryGet(RIGHTS) : null;
   if (rights || e.parts.has(RIGHTS)) {
-    const user = rights ? descendants(rights.root, null, 'user').map((u) => textContent(u).trim()).find(Boolean) : undefined;
-    const operator = rights ? descendants(rights.root, null, 'operatorURL').map((u) => textContent(u).trim()).find(Boolean) : undefined;
+    const user = rights
+      ? descendants(rights.root, null, 'user')
+          .map((u) => textContent(u).trim())
+          .find(Boolean)
+      : undefined;
+    const operator = rights
+      ? descendants(rights.root, null, 'operatorURL')
+          .map((u) => textContent(u).trim())
+          .find(Boolean)
+      : undefined;
     fields.push(
-      rawField('epub:drm:rights', 'DRM licence', [user ? `Adobe DRM licence for account ${user}` : 'Adobe DRM licence', operator ? `issued by ${operator}` : ''].filter(Boolean).join(', '), {
-        sensitivity: 'identity',
-        tag: RIGHTS,
-        description: 'Ties the book to the buyer’s account. A protected book cannot be opened without it, so BlueExif keeps it.',
-        removable: false,
-      }),
+      rawField(
+        'epub:drm:rights',
+        'DRM licence',
+        [user ? `Adobe DRM licence for account ${user}` : 'Adobe DRM licence', operator ? `issued by ${operator}` : ''].filter(Boolean).join(', '),
+        {
+          sensitivity: 'identity',
+          tag: RIGHTS,
+          description: 'Ties the book to the buyer’s account. A protected book cannot be opened without it, so BlueExif keeps it.',
+          removable: false,
+        },
+      ),
     );
   }
   for (const f of VENDOR_FILES) {
     if (!e.parts.has(f)) continue;
     const text = new TextDecoder().decode(await e.zip.read(e.parts.entry(f)!));
     if (f.startsWith('iTunes')) {
-      fields.push(rawField(`epub:file:${f}`, 'Apple Books purchase data', plistDisplay(text), { sensitivity: 'identity', tag: f, description: 'Added by Apple Books / iTunes; can name the buyer’s account.' }));
+      fields.push(
+        rawField(`epub:file:${f}`, 'Apple Books purchase data', plistDisplay(text), {
+          sensitivity: 'identity',
+          tag: f,
+          description: 'Added by Apple Books / iTunes; can name the buyer’s account.',
+        }),
+      );
     } else {
       fields.push(rawField(`epub:file:${f}`, 'calibre reading position', `${text.length} bytes`, { sensitivity: 'content', tag: f }));
     }
@@ -372,7 +417,8 @@ export async function readEpub(src: Source): Promise<Metadata> {
   const { paths, encrypted } = await mediaPaths(e);
   const media = await mediaGroup(e.parts, paths, MEDIA, warnings);
   if (media) groups.push(media);
-  if (encrypted.length) warnings.push(`${encrypted.length} picture${encrypted.length > 1 ? 's are' : ' is'} encrypted (DRM) and could not be checked for metadata.`);
+  if (encrypted.length)
+    warnings.push(`${encrypted.length} picture${encrypted.length > 1 ? 's are' : ' is'} encrypted (DRM) and could not be checked for metadata.`);
   return {
     format: { id: 'epub', name: 'EPUB e-book', mime: 'application/epub+zip', category: 'document' },
     info,
@@ -405,7 +451,9 @@ function setModified(e: Epub, value: string): void {
   let m = metaElements(e).find((x) => getAttr(x, 'property') === 'dcterms:modified' && !getAttr(x, 'refines'));
   if (!m) {
     m = createElement(qname(e.opf.root, e.metadata, NS.opf, 'opf', 'meta'), { property: 'dcterms:modified' });
-    const last = metaChildren(e).filter((c) => c.parent === e.metadata).pop();
+    const last = metaChildren(e)
+      .filter((c) => c.parent === e.metadata)
+      .pop();
     if (last) insertAfter(last, m);
     else {
       m.parent = e.metadata;
@@ -493,7 +541,9 @@ export async function writeEpub(src: Source, edits: Edits): Promise<Blob> {
     if (id === 'epub:meta:dcterms:modified') {
       if (edit.op === 'remove') {
         if (isEpub3(e)) throw new MetadataError('Modified date is required by EPUB 3 and cannot be removed');
-        metaElements(e).filter((x) => getAttr(x, 'property') === 'dcterms:modified').forEach(removeNode);
+        metaElements(e)
+          .filter((x) => getAttr(x, 'property') === 'dcterms:modified')
+          .forEach(removeNode);
       } else setModified(e, modifiedValue(value));
     } else if ((m = /^epub:dc:identifier:(\d+)$/.exec(id))) {
       const el = identifiers[+m[1]];
@@ -547,14 +597,21 @@ export async function stripEpub(src: Source, opts: StripOptions): Promise<Blob> 
   for (const m of otherMetas(e)) removeWithRefines(e, m.el);
   for (const l of metaChildren(e).filter((c) => localName(c.name) === 'link')) removeNode(l);
   // refinements of removed elements (dangling) go too
-  const ids = new Set(metaChildren(e).map((c) => getAttr(c, 'id')).filter(Boolean));
+  const ids = new Set(
+    metaChildren(e)
+      .map((c) => getAttr(c, 'id'))
+      .filter(Boolean),
+  );
   for (const m of metaElements(e)) {
     const r = getAttr(m, 'refines');
     if (r && !ids.has(r.slice(1))) removeNode(m);
   }
   pruneVocabularyPrefixes(e);
   if (isEpub3(e)) setModified(e, NEUTRAL_MODIFIED);
-  else metaElements(e).filter((x) => getAttr(x, 'property') === 'dcterms:modified').forEach(removeNode);
+  else
+    metaElements(e)
+      .filter((x) => getAttr(x, 'property') === 'dcterms:modified')
+      .forEach(removeNode);
   await removeNcxAuthors(e, true);
   for (const f of VENDOR_FILES) e.parts.remove(f);
   await cleanMedia(e.parts, (await mediaPaths(e)).paths, opts);

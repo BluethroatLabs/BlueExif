@@ -105,7 +105,15 @@ async function walk(src: Source, start: number, end: number, avi: Pick<Avi, 'war
       avi.damaged = true;
       stop = end;
     }
-    const c: Chunk = { id, type: isList(id) && h.length >= 12 ? r.fourcc(8) : '', pos: p, size, end: Math.min(end, stop + (size & 1)), data: null, children: [] };
+    const c: Chunk = {
+      id,
+      type: isList(id) && h.length >= 12 ? r.fourcc(8) : '',
+      pos: p,
+      size,
+      end: Math.min(end, stop + (size & 1)),
+      data: null,
+      children: [],
+    };
     const media = c.type === 'movi' || id === 'idx1';
     if (!media && stop - p - 8 <= MAX_LOAD) {
       c.data = await src.read(p + 8, stop - p - 8);
@@ -482,7 +490,11 @@ export async function readAvi(src: Source): Promise<Metadata> {
       if (p) value = toIso(p);
       else kind = 'text';
     }
-    return makeField({ id: `avi:info:${e.key}`, label, kind, sensitivity, tag: `INFO/${e.id}` }, value, kind === 'datetime' ? { display: displayDate(value) } : {});
+    return makeField(
+      { id: `avi:info:${e.key}`, label, kind, sensitivity, tag: `INFO/${e.id}` },
+      value,
+      kind === 'datetime' ? { display: displayDate(value) } : {},
+    );
   });
   const present = new Set(entries.map((e) => e.id));
   const addable: FieldSpec[] = ADDABLE.filter((id) => !present.has(id)).map((id) => {
@@ -497,7 +509,11 @@ export async function readAvi(src: Source): Promise<Metadata> {
   if (idit?.data) {
     const text = zstr(idit.data);
     const p = parseIdit(text);
-    const s = spec('avi:idit', 'Date/time original', p ? 'datetime' : 'text', { sensitivity: 'time', tag: 'IDIT', description: 'Recording date written by the camera.' });
+    const s = spec('avi:idit', 'Date/time original', p ? 'datetime' : 'text', {
+      sensitivity: 'time',
+      tag: 'IDIT',
+      description: 'Recording date written by the camera.',
+    });
     const v = p ? toIso(p) : text;
     camera.push(makeField(s, v, p ? { display: displayDate(v) } : {}));
   }
@@ -520,14 +536,17 @@ export async function readAvi(src: Source): Promise<Metadata> {
   const other: Field[] = [];
   for (const s of streams(avi)) {
     const strn = chunkOf(s.list.children, 'strn');
-    if (strn?.data) other.push(rawField(`avi:strn:${s.index}`, `Stream ${s.index} name`, zstr(strn.data) || '(empty)', { sensitivity: 'content', tag: 'strn' }));
+    if (strn?.data)
+      other.push(rawField(`avi:strn:${s.index}`, `Stream ${s.index} name`, zstr(strn.data) || '(empty)', { sensitivity: 'content', tag: 'strn' }));
   }
   for (const c of unknownChunks(avi)) {
     const [label, sensitivity] = UNKNOWN_LABELS[tagOf(c)] ?? [c.type ? `List “${c.type.trim()}”` : `Chunk “${c.id.trim()}”`, 'content' as Sensitivity];
     other.push(rawField(`avi:chunk:${c.pos}`, label, formatBytes(c.size), { sensitivity, tag: tagOf(c) }));
   }
   if (avi.trailer < avi.size) {
-    other.push(rawField('avi:trailer', 'Data after end', `${formatBytes(avi.size - avi.trailer)} after the last RIFF chunk`, { sensitivity: 'content', tag: 'Trailer' }));
+    other.push(
+      rawField('avi:trailer', 'Data after end', `${formatBytes(avi.size - avi.trailer)} after the last RIFF chunk`, { sensitivity: 'content', tag: 'Trailer' }),
+    );
   }
   if (other.length) groups.push({ id: 'avi.other', label: 'Embedded data', source: 'AVI', fields: other, removable: true });
 
@@ -559,7 +578,9 @@ function junkOver(c: Chunk): Patch {
 
 function junk(total: number): Uint8Array {
   const w = new Writer(true, total);
-  w.ascii('JUNK').u32(total - 8).zeros(total - 8);
+  w.ascii('JUNK')
+    .u32(total - 8)
+    .zeros(total - 8);
   return w.finish();
 }
 
@@ -569,7 +590,10 @@ function infoList(entries: Array<{ id: string; data: Uint8Array }>, extra = 0): 
   w.ascii('LIST').u32(0).ascii('INFO');
   entries.forEach((e, i) => {
     const pad = i === entries.length - 1 ? extra : 0;
-    w.ascii(e.id).u32(e.data.length + pad).bytes(e.data).zeros(pad);
+    w.ascii(e.id)
+      .u32(e.data.length + pad)
+      .bytes(e.data)
+      .zeros(pad);
     if ((e.data.length + pad) & 1) w.u8(0);
   });
   w.patchU32(4, w.length - 8);
@@ -684,7 +708,12 @@ export async function writeAvi(src: Source, edits: Edits): Promise<Blob> {
       if (idx >= 0) next[idx] = { id, data };
       else next.push({ id, data });
     }
-    patches.push(...infoPatches(avi, next.filter((x): x is { id: string; data: Uint8Array } => x !== null)));
+    patches.push(
+      ...infoPatches(
+        avi,
+        next.filter((x): x is { id: string; data: Uint8Array } => x !== null),
+      ),
+    );
   }
 
   // IDIT (in place, same size)

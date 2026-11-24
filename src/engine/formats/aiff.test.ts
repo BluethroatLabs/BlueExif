@@ -128,7 +128,9 @@ describe('aiff', () => {
       expect(contains(bytes, MARK)).toBe(false);
       const et = await exiftool(bytes, rel.split('/').pop()!);
       expect(etProblems(et)).toEqual([]);
-      expect(etMetaKeys(et).filter((k) => !/^AIFF:(NumChannels|NumSampleFrames|SampleSize|SampleRate|FormatVersionTime|CompressionType|CompressorName)$/.test(k))).toEqual([]);
+      expect(
+        etMetaKeys(et).filter((k) => !/^AIFF:(NumChannels|NumSampleFrames|SampleSize|SampleRate|FormatVersionTime|CompressionType|CompressorName)$/.test(k)),
+      ).toEqual([]);
       const m = await aiffHandler.read(new Source(out));
       expect(allFields(m)).toEqual([]);
       await sameAudio(out, rel);
@@ -179,7 +181,9 @@ describe('aiff: damaged files', () => {
     const mp3 = fixtureBytes('audio/rich.mp3');
     const tag = mp3.subarray(0, id3v2Size(mp3));
     const chunk = (body: Uint8Array) => [latin('ID3 '), u32(body.length), body, new Uint8Array(body.length & 1)];
-    const good = await bytesOf(await aiffHandler.strip!(src(aiff([comm, ...chunk(tag), latin('SSND'), u32(sound.length), sound])), strip({ keepCoverArt: true })));
+    const good = await bytesOf(
+      await aiffHandler.strip!(src(aiff([comm, ...chunk(tag), latin('SSND'), u32(sound.length), sound])), strip({ keepCoverArt: true })),
+    );
     expect(chunkIds(good)).toEqual(['COMM', 'ID3 ', 'SSND']);
     expect(contains(good, MARK)).toBe(false);
     expect(allFields(await aiffHandler.read(src(good))).map((f) => f.id)).toEqual(['id3:APIC:0']);

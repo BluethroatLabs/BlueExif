@@ -69,6 +69,7 @@ const LONG8 = 16;
 const own = <T>(o: Record<string, T>, k: string): T | undefined => (Object.hasOwn(o, k) ? o[k] : undefined);
 
 /** Tags describing the image data itself: kept by strip, hidden from the field list, never edited. */
+// biome-ignore format: hand-packed table
 const STRUCTURAL = new Set([
   0x00fe, 0x00ff, 0x0100, 0x0101, 0x0102, 0x0103, 0x0106, 0x0107, 0x0108, 0x0109, 0x010a, 0x0111, 0x0115, 0x0116,
   0x0117, 0x0118, 0x0119, 0x011a, 0x011b, 0x011c, 0x011e, 0x011f, 0x0122, 0x0123, 0x0124, 0x0125, 0x0128, 0x0129,
@@ -425,7 +426,11 @@ function thumbnailField(t: Tiff, pages: TIfd[], writable: boolean): Field | null
   const data = first ? t.bytes.subarray(first[0], first[1]) : null;
   if (found.length === 1 && data && data[0] === 0xff && data[1] === 0xd8) {
     const img = imageValue(data, 'image/jpeg');
-    return makeField({ ...spec, kind: 'image' }, img, { editable: false, removable, display: `${img.width ?? '?'}×${img.height ?? '?'} JPEG preview — ${formatBytes(size)}` });
+    return makeField({ ...spec, kind: 'image' }, img, {
+      editable: false,
+      removable,
+      display: `${img.width ?? '?'}×${img.height ?? '?'} JPEG preview — ${formatBytes(size)}`,
+    });
   }
   return rawField(spec.id, spec.label, `${found.length > 1 ? `${found.length} JPEG previews` : 'JPEG preview'} — ${formatBytes(size)}`, { ...spec, removable });
 }
@@ -485,7 +490,9 @@ export async function readTiff(src: Source): Promise<Metadata> {
   if (irb) {
     const rest = parseIrb(irb).filter((x) => x.id !== IRB_IPTC && x.id !== IRB_IPTC_DIGEST);
     const names = [...new Set(rest.map((x) => IRB_NAMES[x.id] ?? `#${x.id.toString(16)}`))].join(', ');
-    other.push(rawField('tiff:photoshop', 'Photoshop resources', names || formatBytes(irb.length), { sensitivity: 'software', tag: 'PhotoshopSettings (0x8649)' }));
+    other.push(
+      rawField('tiff:photoshop', 'Photoshop resources', names || formatBytes(irb.length), { sensitivity: 'software', tag: 'PhotoshopSettings (0x8649)' }),
+    );
   }
   const thumb = thumbnailField(t, pages, writable && comp !== 6);
   if (thumb) other.push(thumb);
@@ -651,7 +658,9 @@ export async function writeTiffFile(src: Source, edits: Edits): Promise<Blob> {
     exifEdits.set(id, e);
   }
   if (edits.get(groupKey('exif'))?.op === 'remove') {
-    d.ifd0.entries = d.ifd0.entries.filter((e) => STRUCTURAL.has(e.tag) || FREE_SPACE.has(e.tag) || (SPECIAL.has(e.tag) && e.tag !== PTR_EXIF && e.tag !== PTR_GPS));
+    d.ifd0.entries = d.ifd0.entries.filter(
+      (e) => STRUCTURAL.has(e.tag) || FREE_SPACE.has(e.tag) || (SPECIAL.has(e.tag) && e.tag !== PTR_EXIF && e.tag !== PTR_GPS),
+    );
     d.exif = d.gps = d.interop = null;
   } else applyExifEdits(d, exifEdits);
   const ifd0 = d.ifd0.entries as TEntry[];
@@ -856,7 +865,9 @@ export async function stripTiffFile(src: Source, opts: StripOptions): Promise<Bl
         const offs = ints(entries[oi], le).map((off, i) => copy(off, counts[i]));
         const short = entries[oi].type === SHORT && offs.every((v) => v <= 0xffff);
         const w = new Writer(le, offs.length * 4);
-        for (const v of offs) if (short) w.u16(v); else w.u32(v);
+        for (const v of offs)
+          if (short) w.u16(v);
+          else w.u32(v);
         entries[oi] = { tag: o, type: short ? SHORT : LONG, count: offs.length, data: w.finish() };
       }
       return entries;
@@ -865,7 +876,10 @@ export async function stripTiffFile(src: Source, opts: StripOptions): Promise<Bl
     const prepared = new Map(all.map((n) => [n, prepare(n)]));
     const first = emit(app, pages, (n) => prepared.get(n)!);
     const head = new Writer(le, 8);
-    head.ascii(le ? 'II' : 'MM').u16(42).u32(first);
+    head
+      .ascii(le ? 'II' : 'MM')
+      .u16(42)
+      .u32(first);
     return toBlob([head.finish(), ...app.parts], 'image/tiff');
   }
 
@@ -907,4 +921,3 @@ export const tiffHandler: FormatHandler = {
   write: writeTiffFile,
   strip: stripTiffFile,
 };
-

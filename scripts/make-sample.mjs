@@ -11,9 +11,20 @@ const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const tmp = mkdtempSync(join(tmpdir(), 'blueexif-sample-'));
 const raw = join(tmp, 'raw.jpg');
 execFileSync('ffmpeg', [
-  '-v', 'error', '-y', '-f', 'lavfi',
-  '-i', 'mandelbrot=size=960x640:start_scale=0.0035:end_scale=0.0035:outer=normalized_iteration_count:inner=convergence',
-  '-frames:v', '1', '-vf', 'hue=s=0,eq=contrast=1.15', '-q:v', '5', raw,
+  '-v',
+  'error',
+  '-y',
+  '-f',
+  'lavfi',
+  '-i',
+  'mandelbrot=size=960x640:start_scale=0.0035:end_scale=0.0035:outer=normalized_iteration_count:inner=convergence',
+  '-frames:v',
+  '1',
+  '-vf',
+  'hue=s=0,eq=contrast=1.15',
+  '-q:v',
+  '5',
+  raw,
 ]);
 const tags = {
   'IFD0:Make': 'Apple',

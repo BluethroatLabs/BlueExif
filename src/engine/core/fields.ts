@@ -40,12 +40,7 @@ export function rawField(
   };
 }
 
-export function spec(
-  id: string,
-  label: string,
-  kind: FieldKind,
-  extra: Omit<FieldSpec, 'id' | 'label' | 'kind'> = {},
-): FieldSpec {
+export function spec(id: string, label: string, kind: FieldKind, extra: Omit<FieldSpec, 'id' | 'label' | 'kind'> = {}): FieldSpec {
   return { id, label, kind, ...extra };
 }
 
@@ -90,8 +85,7 @@ export function asGps(v: FieldValue): GpsValue {
   if (v && typeof v === 'object' && !Array.isArray(v) && 'lat' in v && 'lon' in v) {
     const g = v as GpsValue;
     if (!Number.isFinite(g.lat) || Math.abs(g.lat) > 90) throw new MetadataError('Latitude must be between -90 and 90');
-    if (!Number.isFinite(g.lon) || Math.abs(g.lon) > 180)
-      throw new MetadataError('Longitude must be between -180 and 180');
+    if (!Number.isFinite(g.lon) || Math.abs(g.lon) > 180) throw new MetadataError('Longitude must be between -180 and 180');
     return g;
   }
   if (typeof v === 'string') {
@@ -121,8 +115,7 @@ export interface DateParts {
   tz?: number;
 }
 
-const ISO_RE =
-  /^\s*(\d{4})(?:[-:](\d{2})(?:[-:](\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:[.,](\d+))?)?)?)?)?\s*(Z|[+-]\d{2}:?\d{2})?\s*$/i;
+const ISO_RE = /^\s*(\d{4})(?:[-:](\d{2})(?:[-:](\d{2})(?:[T ](\d{2}):(\d{2})(?::(\d{2})(?:[.,](\d+))?)?)?)?)?\s*(Z|[+-]\d{2}:?\d{2})?\s*$/i;
 
 /** Parse ISO-8601 and EXIF-ish date strings ("2024:05:01 10:00:00"). */
 export function parseDate(s: string): DateParts | null {

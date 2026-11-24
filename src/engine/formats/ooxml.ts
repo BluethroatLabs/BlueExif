@@ -153,11 +153,23 @@ const VARIANTS: Variant[] = [
   { re: /ms-excel\.sheet\.macroEnabled/i, name: 'Excel macro-enabled workbook', mime: 'application/vnd.ms-excel.sheet.macroEnabled.12' },
   { re: /ms-excel\.template\.macroEnabled/i, name: 'Excel macro-enabled template', mime: 'application/vnd.ms-excel.template.macroEnabled.12' },
   { re: /ms-excel\.sheet\.binary/i, name: 'Excel binary workbook', mime: BINARY_WORKBOOK },
-  { re: /presentationml\.presentation\.main/, name: 'PowerPoint presentation', mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' },
+  {
+    re: /presentationml\.presentation\.main/,
+    name: 'PowerPoint presentation',
+    mime: 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  },
   { re: /presentationml\.template\.main/, name: 'PowerPoint template', mime: 'application/vnd.openxmlformats-officedocument.presentationml.template' },
   { re: /presentationml\.slideshow\.main/, name: 'PowerPoint slide show', mime: 'application/vnd.openxmlformats-officedocument.presentationml.slideshow' },
-  { re: /ms-powerpoint\.presentation\.macroEnabled/i, name: 'PowerPoint macro-enabled presentation', mime: 'application/vnd.ms-powerpoint.presentation.macroEnabled.12' },
-  { re: /ms-powerpoint\.slideshow\.macroEnabled/i, name: 'PowerPoint macro-enabled slide show', mime: 'application/vnd.ms-powerpoint.slideshow.macroEnabled.12' },
+  {
+    re: /ms-powerpoint\.presentation\.macroEnabled/i,
+    name: 'PowerPoint macro-enabled presentation',
+    mime: 'application/vnd.ms-powerpoint.presentation.macroEnabled.12',
+  },
+  {
+    re: /ms-powerpoint\.slideshow\.macroEnabled/i,
+    name: 'PowerPoint macro-enabled slide show',
+    mime: 'application/vnd.ms-powerpoint.slideshow.macroEnabled.12',
+  },
   { re: /ms-powerpoint\.template\.macroEnabled/i, name: 'PowerPoint macro-enabled template', mime: 'application/vnd.ms-powerpoint.template.macroEnabled.12' },
   { re: /visio/i, name: 'Visio drawing', mime: 'application/vnd.ms-visio.drawing' },
 ];
@@ -350,9 +362,7 @@ interface Ooxml {
 async function openOoxml(src: Source): Promise<Ooxml> {
   const head = await src.read(0, 8);
   if (head[0] === 0xd0 && head[1] === 0xcf && head[2] === 0x11 && head[3] === 0xe0) {
-    throw new MetadataError(
-      'This Office file is password protected (or in the old binary format). Remove the password in Office first, then try again.',
-    );
+    throw new MetadataError('This Office file is password protected (or in the old binary format). Remove the password in Office first, then try again.');
   }
   const zip = await ZipArchive.open(src);
   const parts = new XmlParts(zip);
@@ -471,7 +481,10 @@ async function applyCoreEdits(o: Ooxml, edits: Edits): Promise<void> {
   const mine = [...edits].filter(([k]) => k.startsWith('ooxml:core:'));
   const clear = edits.get(groupKey('ooxml.core'))?.op === 'remove';
   if (!mine.length && !clear) return;
-  const root = await coreRoot(o, mine.some(([, e]) => e.op === 'set'));
+  const root = await coreRoot(
+    o,
+    mine.some(([, e]) => e.op === 'set'),
+  );
   if (!root) return;
   if (clear) root.children = [];
   for (const [id, e] of mine) {
@@ -551,7 +564,13 @@ function appGroup(root: XElement | null, info: InfoItem[]): FieldGroup {
     const text = textContent(el).trim();
     if (local === 'HLinks') {
       // vector of variants: hash, ids, target, anchor per hyperlink
-      const targets = [...new Set(descendants(el, NS.vt, 'lpwstr').map((t) => textContent(t).trim()).filter(Boolean))];
+      const targets = [
+        ...new Set(
+          descendants(el, NS.vt, 'lpwstr')
+            .map((t) => textContent(t).trim())
+            .filter(Boolean),
+        ),
+      ];
       links = rawField('ooxml:app:HLinks', 'Hyperlink list', targets.length ? listDisplay(targets) : '(empty)', {
         sensitivity: targets.some(isLocalPath) ? 'identity' : 'content',
         tag: 'HLinks',
@@ -564,7 +583,9 @@ function appGroup(root: XElement | null, info: InfoItem[]): FieldGroup {
     } else if (STATS[local] && text) info.push({ label: STATS[local], value: text });
     else if (local === 'DocSecurity' && SECURITY[text]) info.push({ label: 'Protection', value: SECURITY[text] });
     else if (local === 'TitlesOfParts') {
-      const names = elements(el).flatMap((v) => elements(v)).map((x) => textContent(x));
+      const names = elements(el)
+        .flatMap((v) => elements(v))
+        .map((x) => textContent(x));
       if (names.length) info.push({ label: 'Titles of parts', value: names.length > 12 ? `${names.slice(0, 12).join(', ')}, …` : names.join(', ') });
     }
   }
@@ -606,7 +627,10 @@ async function applyAppEdits(o: Ooxml, edits: Edits): Promise<void> {
   const mine = [...edits].filter(([k]) => k.startsWith('ooxml:app:'));
   const clear = edits.get(groupKey('ooxml.app'))?.op === 'remove';
   if (!mine.length && !clear) return;
-  const root = await appRoot(o, mine.some(([, e]) => e.op === 'set'));
+  const root = await appRoot(
+    o,
+    mine.some(([, e]) => e.op === 'set'),
+  );
   if (!root || !o.app) return;
   if (clear) scrubApp(root);
   for (const [id, e] of mine) {
@@ -658,7 +682,19 @@ function customGroup(root: XElement | null): FieldGroup {
     else if (NUM_TYPES.has(type) && Number.isFinite(Number(text))) fields.push(makeField({ ...spec, kind: 'number' }, Number(text)));
     else if (type === 'bool') {
       const v = /^(1|true)$/i.test(text.trim()) ? 'true' : 'false';
-      fields.push(makeField({ ...spec, kind: 'enum', options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] }, v));
+      fields.push(
+        makeField(
+          {
+            ...spec,
+            kind: 'enum',
+            options: [
+              { value: 'true', label: 'Yes' },
+              { value: 'false', label: 'No' },
+            ],
+          },
+          v,
+        ),
+      );
     } else if (type === 'filetime' || type === 'date') fields.push(dateField({ ...spec, kind: 'datetime' }, text));
     else fields.push(rawField(id, name, text.trim() || `(${type || 'empty'})`, { sensitivity: spec.sensitivity, tag: spec.tag }));
   }
@@ -786,7 +822,30 @@ function anonNoteRuns(comments: XElement): boolean {
   return changed;
 }
 
-const W_DATED = new Set(['comment', 'ins', 'del', 'moveFrom', 'moveTo', 'rPrChange', 'pPrChange', 'sectPrChange', 'tblPrChange', 'trPrChange', 'tcPrChange', 'tblGridChange', 'numberingChange', 'cellIns', 'cellDel', 'cellMerge', 'customXmlInsRangeStart', 'customXmlDelRangeStart', 'customXmlMoveFromRangeStart', 'customXmlMoveToRangeStart', 'moveFromRangeStart', 'moveToRangeStart']);
+const W_DATED = new Set([
+  'comment',
+  'ins',
+  'del',
+  'moveFrom',
+  'moveTo',
+  'rPrChange',
+  'pPrChange',
+  'sectPrChange',
+  'tblPrChange',
+  'trPrChange',
+  'tcPrChange',
+  'tblGridChange',
+  'numberingChange',
+  'cellIns',
+  'cellDel',
+  'cellMerge',
+  'customXmlInsRangeStart',
+  'customXmlDelRangeStart',
+  'customXmlMoveFromRangeStart',
+  'customXmlMoveToRangeStart',
+  'moveFromRangeStart',
+  'moveToRangeStart',
+]);
 
 function walkHidden(el: XElement, scan: HiddenScan, apply: Set<HiddenKind>, drop: XElement[]): boolean {
   let changed = false;
@@ -970,18 +1029,35 @@ function hiddenGroup(scan: HiddenScan, extra: Field[]): FieldGroup {
   }
   if (scan.rsids.size || scan.docIds) {
     fields.push(
-      rawField('ooxml:hidden:rsid', 'Editing session IDs', `${scan.rsids.size} revision session id${scan.rsids.size === 1 ? '' : 's'}${scan.docIds ? ' + document id' : ''}`, {
-        sensitivity: 'software',
-        tag: 'w:rsid',
-        description: 'Random ids Word adds per editing session; they can link documents edited on the same computer.',
-      }),
+      rawField(
+        'ooxml:hidden:rsid',
+        'Editing session IDs',
+        `${scan.rsids.size} revision session id${scan.rsids.size === 1 ? '' : 's'}${scan.docIds ? ' + document id' : ''}`,
+        {
+          sensitivity: 'software',
+          tag: 'w:rsid',
+          description: 'Random ids Word adds per editing session; they can link documents edited on the same computer.',
+        },
+      ),
     );
   }
   if (scan.template) {
-    fields.push(rawField('ooxml:hidden:template', 'Attached template', scan.template, { sensitivity: 'identity', tag: 'w:attachedTemplate', description: 'The template path often contains the user name.' }));
+    fields.push(
+      rawField('ooxml:hidden:template', 'Attached template', scan.template, {
+        sensitivity: 'identity',
+        tag: 'w:attachedTemplate',
+        description: 'The template path often contains the user name.',
+      }),
+    );
   }
   if (scan.abspath) {
-    fields.push(rawField('ooxml:hidden:abspath', 'Original file location', scan.abspath, { sensitivity: 'identity', tag: 'x15ac:absPath', description: 'The folder the workbook was last saved in.' }));
+    fields.push(
+      rawField('ooxml:hidden:abspath', 'Original file location', scan.abspath, {
+        sensitivity: 'identity',
+        tag: 'x15ac:absPath',
+        description: 'The folder the workbook was last saved in.',
+      }),
+    );
   }
   if (scan.docVars.length) {
     const n = scan.docVars.length;
@@ -1100,7 +1176,11 @@ async function printerField(o: Ooxml, parts: string[]): Promise<Field | null> {
     }
   }
   const display = names.size ? [...names].join(', ') : `${parts.length} printer settings part${parts.length > 1 ? 's' : ''}`;
-  return rawField('ooxml:hidden:printer', 'Printer', display, { sensitivity: 'device', tag: 'printerSettings', description: 'The printer last used, with its driver settings.' });
+  return rawField('ooxml:hidden:printer', 'Printer', display, {
+    sensitivity: 'device',
+    tag: 'printerSettings',
+    description: 'The printer last used, with its driver settings.',
+  });
 }
 
 async function removePrinterParts(o: Ooxml, parts: string[]): Promise<void> {
@@ -1237,12 +1317,19 @@ export async function readOoxml(src: Source): Promise<Metadata> {
   };
   const groups: FieldGroup[] = [coreGroup(await load(o.core)), appGroup(await load(o.app), info), customGroup(await load(o.custom))];
   const extra = [serverField(await serverItems(o)), await printerField(o, await printerParts(o)), linksField(await localLinks(o))];
-  groups.push(hiddenGroup(await processHidden(o, new Set()), extra.filter((f): f is Field => !!f)));
+  groups.push(
+    hiddenGroup(
+      await processHidden(o, new Set()),
+      extra.filter((f): f is Field => !!f),
+    ),
+  );
   groups.push(await otherGroup(o));
   const media = await mediaGroup(o.pkg.parts, await mediaParts(o), MEDIA, warnings);
   if (media) groups.push(media);
   if (o.variant?.mime === BINARY_WORKBOOK || /\.bin$/i.test(o.main ?? '')) {
-    warnings.push('Binary workbooks (.xlsb) keep sheets, comments and names in binary parts BlueExif cannot read: comment authors and other personal information in them are not shown or removed.');
+    warnings.push(
+      'Binary workbooks (.xlsb) keep sheets, comments and names in binary parts BlueExif cannot read: comment authors and other personal information in them are not shown or removed.',
+    );
   }
   if (o.pkg.zip.entries.some((e) => /vbaProject\.bin$/i.test(e.name))) info.push({ label: 'Macros', value: 'VBA project present' });
   if (o.pkg.zip.entries.some((e) => /^_xmlsignatures\//i.test(e.name))) {

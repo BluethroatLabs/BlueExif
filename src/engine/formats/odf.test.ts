@@ -215,7 +215,9 @@ function richerOdt(): Uint8Array {
   const out: Zippable = { mimetype: [f.mimetype, { level: 0 }] };
   for (const [k, v] of Object.entries(f)) if (k !== 'mimetype') out[k] = k === 'META-INF/manifest.xml' ? strToU8(manifest) : v;
   out['Pictures/photo.jpg'] = [CAMERA, { level: 0 }];
-  out['Object 1/content.xml'] = strToU8(`<?xml version="1.0" encoding="UTF-8"?><office:document-content ${OFFICE} office:version="1.2"><office:body><office:chart/></office:body></office:document-content>`);
+  out['Object 1/content.xml'] = strToU8(
+    `<?xml version="1.0" encoding="UTF-8"?><office:document-content ${OFFICE} office:version="1.2"><office:body><office:chart/></office:body></office:document-content>`,
+  );
   out['Object 1/meta.xml'] = strToU8(OBJECT_META);
   out['VersionList.xml'] = strToU8(VERSIONS);
   out['Versions/Version1'] = [fixtureBytes('documents/plain.odt'), { level: 0 }];

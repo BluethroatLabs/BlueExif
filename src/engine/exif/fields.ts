@@ -19,15 +19,7 @@ import {
 } from '../core/fields';
 import type { Edits, Field, FieldGroup, FieldKind, FieldSpec, GpsValue } from '../core/types';
 import { MetadataError } from '../core/types';
-import {
-  ADDABLE,
-  EXIF_GROUP_LABELS,
-  TAGS_BY_IFD,
-  flashDescription,
-  type ExifGroup,
-  type IfdName,
-  type TagDef,
-} from './tags';
+import { ADDABLE, EXIF_GROUP_LABELS, TAGS_BY_IFD, flashDescription, type ExifGroup, type IfdName, type TagDef } from './tags';
 import {
   ASCII,
   BYTE,
@@ -299,10 +291,7 @@ function specFor(prefix: string, ifd: IfdName, tag: number, def: TagDef): FieldS
     kind,
     sensitivity: def.sens,
     tag: `${def.name} (0x${hex(tag)})`,
-    options:
-      kind === 'enum' && def.values
-        ? Object.entries(def.values).map(([value, label]) => ({ value, label }))
-        : undefined,
+    options: kind === 'enum' && def.values ? Object.entries(def.values).map(([value, label]) => ({ value, label })) : undefined,
     placeholder: def.edit === 'rational' ? 'e.g. 1/125 or 2.8' : def.edit === 'integer' ? '0' : undefined,
   };
 }
@@ -448,9 +437,7 @@ export function exifGroups(d: ExifData, opts: ExifGroupOptions = {}): FieldGroup
       addableByGroup.get(def.group)!.push(specFor(prefix, ifd, tag, def));
     }
     if (!gps) {
-      addableByGroup.set('location', [
-        { id: `${prefix}:gps:location`, label: 'GPS location', kind: 'gps', sensitivity: 'location' },
-      ]);
+      addableByGroup.set('location', [{ id: `${prefix}:gps:location`, label: 'GPS location', kind: 'gps', sensitivity: 'location' }]);
     }
   }
 
@@ -473,7 +460,10 @@ export function exifGroups(d: ExifData, opts: ExifGroupOptions = {}): FieldGroup
 // --------------------------------------------------------------- editing
 
 function parseRationalInput(v: string, label: string, signed: boolean): [number, number] {
-  const s = v.trim().replace(/\s*(s|mm|ev)$/i, '').replace(/^f\//i, '');
+  const s = v
+    .trim()
+    .replace(/\s*(s|mm|ev)$/i, '')
+    .replace(/^f\//i, '');
   const frac = /^([+-]?\d+)\s*\/\s*(\d+)$/.exec(s);
   if (frac) {
     const n = +frac[1];

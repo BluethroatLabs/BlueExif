@@ -197,7 +197,9 @@ describe('avi', () => {
 
   it('edits and removes IDIT in place; removes groups', async () => {
     const orig = fixtureBytes('video/camera.avi');
-    const out = await bytesOf(await aviHandler.write!(fixture('video/camera.avi'), edits({ 'avi:idit': '2019-12-31T23:59:58', [groupKey('avi.info')]: REMOVE })));
+    const out = await bytesOf(
+      await aviHandler.write!(fixture('video/camera.avi'), edits({ 'avi:idit': '2019-12-31T23:59:58', [groupKey('avi.info')]: REMOVE })),
+    );
     expect(out.length).toBe(orig.length);
     const m = await read(out);
     expect(field(m, 'avi:idit')?.value).toBe('2019-12-31T23:59:58');
@@ -246,11 +248,21 @@ describe('avi', () => {
 
   it('handles OpenDML AVIX parts: in-place edits only', async () => {
     const base = fixtureBytes('video/tagged.avi');
-    const movi = new Uint8Array([...'LIST'].map((c) => c.charCodeAt(0)).concat([4, 0, 0, 0], [...'movi'].map((c) => c.charCodeAt(0))));
+    const movi = new Uint8Array(
+      [...'LIST']
+        .map((c) => c.charCodeAt(0))
+        .concat(
+          [4, 0, 0, 0],
+          [...'movi'].map((c) => c.charCodeAt(0)),
+        ),
+    );
     const avix = new Uint8Array(12);
     avix.set([...'RIFF'].map((c) => c.charCodeAt(0)));
     new DataView(avix.buffer).setUint32(4, 4 + movi.length, true);
-    avix.set([...'AVIX'].map((c) => c.charCodeAt(0)), 8);
+    avix.set(
+      [...'AVIX'].map((c) => c.charCodeAt(0)),
+      8,
+    );
     const b = concat([base, avix, movi]);
     const m = await read(b);
     expect(m.info.find((i) => i.label === 'OpenDML')?.value).toBe('Yes, 2 RIFF parts');

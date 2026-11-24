@@ -187,7 +187,13 @@ function forget(render: Render): void {
 
 function pump(): void {
   while (running < MAX_PARALLEL && waiting.length) {
-    const [{ render, resolve }] = waiting.splice(Math.max(0, waiting.findIndex((w) => w.render.high)), 1);
+    const [{ render, resolve }] = waiting.splice(
+      Math.max(
+        0,
+        waiting.findIndex((w) => w.render.high),
+      ),
+      1,
+    );
     if (render.ctrl.signal.aborted) {
       resolve(null);
       continue;
@@ -278,7 +284,17 @@ export function renderPdfPage(file: Blob, req: PdfPageRequest): Promise<PdfPageI
   if (!list) renders.set(file, (list = []));
   let render = list.find((r) => r.password === password && r.boxW >= width && r.boxH >= height);
   if (!render) {
-    const r: Render = { file, password, boxW: width, boxH: height, high: false, users: 0, done: false, ctrl: new AbortController(), result: Promise.resolve(null) };
+    const r: Render = {
+      file,
+      password,
+      boxW: width,
+      boxH: height,
+      high: false,
+      users: 0,
+      done: false,
+      ctrl: new AbortController(),
+      result: Promise.resolve(null),
+    };
     r.result = new Promise<PdfPageImage | null>((resolve) => waiting.push({ render: r, resolve })).then((img) => {
       r.done = true;
       return img;

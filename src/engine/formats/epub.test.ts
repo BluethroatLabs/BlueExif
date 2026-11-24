@@ -72,7 +72,13 @@ describe('epub', () => {
     expect(field(m, 'epub:ncx:docAuthor')?.display).toBe(`Jane ${MARK} Doe`);
     expect(field(m, 'epub:file:iTunesMetadata.plist')?.display).toBe(`Apple ID buyer@${MARK}.example, purchased 2024-05-01T10:00:00Z`);
     expect(field(m, 'epub:file:META-INF/calibre_bookmarks.txt')).toBeDefined();
-    expect(m.groups.find((g) => g.id === 'epub.dc')?.addable?.map((a) => a.id)).toEqual(['epub:dc:source', 'epub:dc:coverage', 'epub:dc:relation', 'epub:dc:type', 'epub:dc:format']);
+    expect(m.groups.find((g) => g.id === 'epub.dc')?.addable?.map((a) => a.id)).toEqual([
+      'epub:dc:source',
+      'epub:dc:coverage',
+      'epub:dc:relation',
+      'epub:dc:type',
+      'epub:dc:format',
+    ]);
   });
 
   it('reads an EPUB 3 package with refinements', async () => {
@@ -173,19 +179,32 @@ describe('epub', () => {
     const collection = allFields(before).find((f) => f.label === 'belongs-to-collection')!.id;
     const out = await epubHandler.write!(fixture('documents/book3.epub'), edits({ [groupKey('epub.dc')]: REMOVE, [collection]: REMOVE }));
     const m = await read(out);
-    expect(allFields(m).filter((f) => /^epub:meta:\d+$/.test(f.id)).map((f) => f.label)).toEqual(['calibre:timestamp']);
+    expect(
+      allFields(m)
+        .filter((f) => /^epub:meta:\d+$/.test(f.id))
+        .map((f) => f.label),
+    ).toEqual(['calibre:timestamp']);
     expect(texts(await bytesOf(out))[OPF]).not.toContain('Weather Tales');
   });
 
   it('resolves indexed fields before removing any of them', async () => {
     const f = unzipSync(fixtureBytes('documents/book3.epub'));
-    const opf = strFromU8(f[OPF]).replace('<dc:date>2024-05-01</dc:date>', '<dc:date>2024-05-01</dc:date><dc:date>2019-02-03</dc:date><dc:date>2018-04-05</dc:date>');
+    const opf = strFromU8(f[OPF]).replace(
+      '<dc:date>2024-05-01</dc:date>',
+      '<dc:date>2024-05-01</dc:date><dc:date>2019-02-03</dc:date><dc:date>2018-04-05</dc:date>',
+    );
     const out: Zippable = { mimetype: [f.mimetype, { level: 0 }] };
     for (const [k, v] of Object.entries(f)) if (k !== 'mimetype') out[k] = k === OPF ? strToU8(opf) : v;
     const dated = zipSync(out);
     expect(field(await read(dated), 'epub:dc:date:2')?.value).toBe('2018-04-05');
-    const m = await read(await epubHandler.write!(Source.fromBytes(dated, 'b.epub'), edits({ 'epub:dc:date': REMOVE, 'epub:dc:date:1': REMOVE, 'epub:dc:date:2': '2020-06-07' })));
-    expect(allFields(m).filter((x) => x.id.startsWith('epub:dc:date')).map((x) => x.value)).toEqual(['2020-06-07']);
+    const m = await read(
+      await epubHandler.write!(Source.fromBytes(dated, 'b.epub'), edits({ 'epub:dc:date': REMOVE, 'epub:dc:date:1': REMOVE, 'epub:dc:date:2': '2020-06-07' })),
+    );
+    expect(
+      allFields(m)
+        .filter((x) => x.id.startsWith('epub:dc:date'))
+        .map((x) => x.value),
+    ).toEqual(['2020-06-07']);
   });
 
   for (const name of ['book2.epub', 'book3.epub']) {
@@ -288,7 +307,14 @@ describe('epub: pictures and DRM licence', () => {
     expect(t['META-INF/rights.xml']).toBe(RIGHTS);
     expect(t['META-INF/encryption.xml']).toBe(ENCRYPTION);
     const m = await read(bytes);
-    expect(allFields(m).map((f) => f.id)).toEqual(['epub:dc:title', 'epub:dc:language', 'epub:dc:identifier:0', 'epub:meta:dcterms:modified', 'epub:cover', 'epub:drm:rights']);
+    expect(allFields(m).map((f) => f.id)).toEqual([
+      'epub:dc:title',
+      'epub:dc:language',
+      'epub:dc:identifier:0',
+      'epub:meta:dcterms:modified',
+      'epub:cover',
+      'epub:drm:rights',
+    ]);
     expect(field(m, 'epub:cover')?.value as ImageValue).toMatchObject({ mime: 'image/png' });
   });
 

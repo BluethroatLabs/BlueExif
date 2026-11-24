@@ -132,7 +132,10 @@ const toastLife = (kind: Toast['kind']) => (kind === 'error' ? 10_000 : 5_000);
 
 function armToast(id: number, kind: Toast['kind']): void {
   clearTimeout(toastTimers.get(id));
-  toastTimers.set(id, setTimeout(() => dismissToast(id), toastLife(kind)));
+  toastTimers.set(
+    id,
+    setTimeout(() => dismissToast(id), toastLife(kind)),
+  );
 }
 
 export function toast(text: string, kind: Toast['kind'] = 'info'): void {
@@ -381,7 +384,9 @@ export function copyEditToAll(sourceId: string, fieldId: string): number {
   let n = 0;
   for (const f of state.files) {
     if (f.id === sourceId || !f.meta?.canWrite) continue;
-    const has = f.meta.groups.some((g) => g.fields.some((x) => x.id === fieldId && (edit.op === 'remove' ? x.removable : x.editable)) || g.addable?.some((x) => x.id === fieldId));
+    const has = f.meta.groups.some(
+      (g) => g.fields.some((x) => x.id === fieldId && (edit.op === 'remove' ? x.removable : x.editable)) || g.addable?.some((x) => x.id === fieldId),
+    );
     if (!has) continue;
     setEdit(f.id, fieldId, edit);
     n++;
@@ -422,9 +427,7 @@ export function restoreGroup(id: string, group: FieldGroup): void {
 export function removeSensitive(id: string, categories: Sensitivity[]): number {
   const f = fileById(id);
   if (!f?.meta) return 0;
-  const targets: Field[] = f.meta.groups
-    .flatMap((g) => g.fields)
-    .filter((x) => x.removable && x.sensitivity && categories.includes(x.sensitivity));
+  const targets: Field[] = f.meta.groups.flatMap((g) => g.fields).filter((x) => x.removable && x.sensitivity && categories.includes(x.sensitivity));
   setEdits(
     id,
     targets.map((x) => [x.id, { op: 'remove' }]),

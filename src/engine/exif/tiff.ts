@@ -425,7 +425,9 @@ export function writeTiff(d: ExifData): Uint8Array {
   if (ifd1 && d.thumbnail) pieces.push([thumbOffset, d.thumbnail]);
   pieces.sort((x, y) => x[0] - y[0]);
   const w = new Writer(le, Math.max(pos, pinned?.end ?? 0) + 16);
-  w.ascii(le ? 'II' : 'MM').u16(42).u32(ifdOffset.get('ifd0')!);
+  w.ascii(le ? 'II' : 'MM')
+    .u16(42)
+    .u32(ifdOffset.get('ifd0')!);
   for (const [at, bytes] of pieces) {
     if (w.pos < at) w.zeros(at - w.pos);
     w.bytes(bytes);
@@ -448,7 +450,6 @@ export function emptyExif(le = false): ExifData {
 }
 
 export function isEmptyExif(d: ExifData): boolean {
-  const meaningful = (ifd: Ifd | null) =>
-    !!ifd && ifd.entries.some((e) => ![PTR_EXIF, PTR_GPS, PTR_INTEROP, THUMB_OFFSET, THUMB_LENGTH].includes(e.tag));
+  const meaningful = (ifd: Ifd | null) => !!ifd && ifd.entries.some((e) => ![PTR_EXIF, PTR_GPS, PTR_INTEROP, THUMB_OFFSET, THUMB_LENGTH].includes(e.tag));
   return !meaningful(d.ifd0) && !meaningful(d.exif) && !meaningful(d.gps) && !d.thumbnail;
 }

@@ -83,7 +83,11 @@ describe('gif', () => {
     checkImage(out, src);
 
     const m = await read(out);
-    expect(allFields(m).filter((f) => f.id.startsWith('gif:comment:')).map((f) => f.value)).toEqual(['Edited — ünïcödé', 'Second comment']);
+    expect(
+      allFields(m)
+        .filter((f) => f.id.startsWith('gif:comment:'))
+        .map((f) => f.value),
+    ).toEqual(['Edited — ünïcödé', 'Second comment']);
     expect(field(m, XMP_TITLE)?.value).toBe('New title');
     expect(fieldByLabel(m, 'Plain text overlay')).toBeDefined();
     expect(field(m, 'gif:trailer')).toBeUndefined();

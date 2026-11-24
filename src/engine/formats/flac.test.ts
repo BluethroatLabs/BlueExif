@@ -100,10 +100,7 @@ describe('flac', () => {
   });
 
   it('removes the prepended ID3 tag and application block, replacing repeated keys', async () => {
-    const out = await flacHandler.write!(
-      fixture('audio/id3.flac'),
-      edits({ [groupKey('id3')]: REMOVE, 'flac:block:3': REMOVE, 'vorbis:ARTIST': 'Only One' }),
-    );
+    const out = await flacHandler.write!(fixture('audio/id3.flac'), edits({ [groupKey('id3')]: REMOVE, 'flac:block:3': REMOVE, 'vorbis:ARTIST': 'Only One' }));
     const bytes = await bytesOf(out);
     expect(bytes.subarray(0, 4)).toEqual(new Uint8Array([0x66, 0x4c, 0x61, 0x43]));
     const et = await exiftool(bytes, 'out.flac');
@@ -123,7 +120,10 @@ describe('flac', () => {
   });
 
   it('adds tags to a file with only a vendor string', async () => {
-    const out = await flacHandler.write!(fixture('audio/plain.flac'), edits({ 'vorbis:TITLE': 'Fresh', 'vorbis:picture:new': { mime: 'image/jpeg', data: fixtureBytes('jpeg/plain.jpg') } }));
+    const out = await flacHandler.write!(
+      fixture('audio/plain.flac'),
+      edits({ 'vorbis:TITLE': 'Fresh', 'vorbis:picture:new': { mime: 'image/jpeg', data: fixtureBytes('jpeg/plain.jpg') } }),
+    );
     const et = await exiftool(out, 'out.flac');
     expect(etProblems(et)).toEqual([]);
     expect(et['Vorbis:Title']).toBe('Fresh');
@@ -138,7 +138,9 @@ describe('flac', () => {
       expect(contains(bytes, MARK)).toBe(false);
       const et = await exiftool(bytes, 'out.flac');
       expect(etProblems(et)).toEqual([]);
-      expect(etMetaKeys(et).filter((k) => !/^FLAC:(BlockSize|FrameSize|SampleRate|Channels|BitsPerSample|TotalSamples|MD5Signature|Padding|SeekTable)/.test(k))).toEqual([]);
+      expect(
+        etMetaKeys(et).filter((k) => !/^FLAC:(BlockSize|FrameSize|SampleRate|Channels|BitsPerSample|TotalSamples|MD5Signature|Padding|SeekTable)/.test(k)),
+      ).toEqual([]);
       const m = await flacHandler.read(new Source(out));
       expect(allFields(m)).toEqual([]);
       expect(m.warnings).toEqual([]);
@@ -179,7 +181,11 @@ describe('flac: tags written by MP3 tools', () => {
     const src = () => Source.fromBytes(b, 'x.flac');
     const m = await flacHandler.read(src());
     expect(m.warnings.join('\n')).toMatch(/appended after the audio/);
-    expect(allFields(m).filter((f) => f.id.startsWith('flac:trailer:')).map((f) => f.label)).toEqual(['APEv2 tag', 'ID3v1 tag']);
+    expect(
+      allFields(m)
+        .filter((f) => f.id.startsWith('flac:trailer:'))
+        .map((f) => f.label),
+    ).toEqual(['APEv2 tag', 'ID3v1 tag']);
     expect(field(m, 'flac:trailer:1')?.display).toBe(`Song · Jane ${MARK}`);
     expect(info(m, 'Duration')).toBe(info(await flacHandler.read(fixture('audio/tagged.flac')), 'Duration'));
 
@@ -187,7 +193,11 @@ describe('flac: tags written by MP3 tools', () => {
     const kept = await bytesOf(await flacHandler.write!(src(), edits({ 'vorbis:TITLE': 'New' })));
     expect(Buffer.from(kept.subarray(kept.length - 128)).equals(Buffer.from(b.subarray(b.length - 128)))).toBe(true);
     const one = await flacHandler.write!(src(), edits({ 'flac:trailer:1': REMOVE }));
-    expect(allFields(await flacHandler.read(new Source(one))).filter((f) => f.id.startsWith('flac:trailer:')).map((f) => f.label)).toEqual(['APEv2 tag']);
+    expect(
+      allFields(await flacHandler.read(new Source(one)))
+        .filter((f) => f.id.startsWith('flac:trailer:'))
+        .map((f) => f.label),
+    ).toEqual(['APEv2 tag']);
 
     const out = await flacHandler.strip!(src(), strip());
     expect(contains(await bytesOf(out), MARK)).toBe(false);

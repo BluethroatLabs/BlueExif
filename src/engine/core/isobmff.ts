@@ -306,6 +306,7 @@ export function sniffFtyp(head: Uint8Array): Ftyp | null {
 }
 
 /** Brands of still-image HEIF files (HEIC, AVIF …) and image sequences. */
+// biome-ignore format: hand-packed table
 export const HEIF_BRANDS = new Set([
   'mif1', 'mif2', 'msf1', 'heic', 'heix', 'heim', 'heis', 'hevc', 'hevx', 'hevm', 'hevs',
   'avif', 'avis', 'avio', 'MiHA', 'MiHB', 'MiHE', 'MiPr', 'miaf', 'jpeg', 'jpgs', 'vvic',
@@ -623,7 +624,10 @@ export function trackId(trak: BoxNode): number {
 
 /** Sorted ranges with overlapping or touching ones merged. */
 export function mergeRanges(ranges: ReadonlyArray<readonly [number, number]>): Array<[number, number]> {
-  const sorted = ranges.filter(([s, e]) => e > s).map(([s, e]): [number, number] => [s, e]).sort((a, b) => a[0] - b[0]);
+  const sorted = ranges
+    .filter(([s, e]) => e > s)
+    .map(([s, e]): [number, number] => [s, e])
+    .sort((a, b) => a[0] - b[0]);
   const out: Array<[number, number]> = [];
   for (const [s, e] of sorted) {
     const prev = out[out.length - 1];

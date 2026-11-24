@@ -66,22 +66,7 @@ const PROFILE_RE = /^Raw profile type (\S+)$/i;
 const own = <T>(o: Record<string, T>, k: string): T | undefined => (Object.hasOwn(o, k) ? o[k] : undefined);
 
 /** Ancillary chunks needed to render the image correctly (kept by strip). */
-const RENDER_CHUNKS = new Set([
-  'tRNS',
-  'gAMA',
-  'cHRM',
-  'sRGB',
-  'cICP',
-  'mDCv',
-  'cLLi',
-  'pHYs',
-  'sBIT',
-  'bKGD',
-  'hIST',
-  'acTL',
-  'fcTL',
-  'fdAT',
-]);
+const RENDER_CHUNKS = new Set(['tRNS', 'gAMA', 'cHRM', 'sRGB', 'cICP', 'mDCv', 'cLLi', 'pHYs', 'sBIT', 'bKGD', 'hIST', 'acTL', 'fcTL', 'fdAT']);
 
 const CHUNK_LABELS: Record<string, [string, Sensitivity?]> = {
   caBX: ['Content Credentials (C2PA)', 'software'],
@@ -536,7 +521,10 @@ export async function readPng(src: Source): Promise<Metadata> {
 function makeChunk(type: string, data: Uint8Array): Uint8Array {
   const t = encodeLatin1(type);
   const w = new Writer(false, data.length + 12);
-  w.u32(data.length).bytes(t).bytes(data).u32(crc32(data, crc32(t)));
+  w.u32(data.length)
+    .bytes(t)
+    .bytes(data)
+    .u32(crc32(data, crc32(t)));
   return w.finish();
 }
 
@@ -548,7 +536,12 @@ function encodeText(t: PngText): Uint8Array {
   else if (t.type === 'zTXt') w.u8(0).bytes(zlibSync(encodeLatin1(t.text)));
   else {
     const body = encodeUtf8(t.text);
-    w.u8(t.compressed ? 1 : 0).u8(0).bytes(encodeLatin1(t.lang)).u8(0).bytes(encodeUtf8(t.translated)).u8(0);
+    w.u8(t.compressed ? 1 : 0)
+      .u8(0)
+      .bytes(encodeLatin1(t.lang))
+      .u8(0)
+      .bytes(encodeUtf8(t.translated))
+      .u8(0);
     w.bytes(t.compressed ? zlibSync(body) : body);
   }
   return makeChunk(t.type, w.finish());
@@ -563,7 +556,14 @@ function updatedText(prev: PngText | undefined, keyword: string, value: string):
   const text = value.replace(/\0/g, '');
   const big = text.length > 1024;
   if (prev?.type === 'iTXt' || !isAscii(text)) {
-    return { type: 'iTXt', keyword, text, compressed: prev ? prev.compressed || prev.type === 'zTXt' : big, lang: prev?.lang ?? '', translated: prev?.translated ?? '' };
+    return {
+      type: 'iTXt',
+      keyword,
+      text,
+      compressed: prev ? prev.compressed || prev.type === 'zTXt' : big,
+      lang: prev?.lang ?? '',
+      translated: prev?.translated ?? '',
+    };
   }
   const type = prev ? prev.type : big ? 'zTXt' : 'tEXt';
   return { type, keyword, text, compressed: type === 'zTXt', lang: '', translated: '' };
@@ -579,7 +579,12 @@ function encodeTime(value: Parameters<typeof asText>[0]): Uint8Array {
   const u = p.tz !== undefined && p.tz !== 0 ? dateToParts(partsToDate(p)) : p;
   if (u.year < 0 || u.year > 65535) throw new MetadataError(`${TIME_SPEC.label}: year out of range`);
   const w = new Writer(false, 7);
-  w.u16(u.year).u8(u.month ?? 1).u8(u.day ?? 1).u8(u.hour ?? 0).u8(u.minute ?? 0).u8(Math.min(u.second ?? 0, 60));
+  w.u16(u.year)
+    .u8(u.month ?? 1)
+    .u8(u.day ?? 1)
+    .u8(u.hour ?? 0)
+    .u8(u.minute ?? 0)
+    .u8(Math.min(u.second ?? 0, 60));
   return w.finish();
 }
 
@@ -607,7 +612,9 @@ function assemble(png: Png, roles: Role[], plan: Plan): Blob {
       ? encodeText({ type: 'iTXt', keyword: XMP_KEYWORD, text: serializeXmp(p, { padding: 0 }), compressed: false, lang: '', translated: '' })
       : null,
   );
-  const iptcChunk = regen(plan.iptc, (b) => encodeText({ type: 'zTXt', keyword: 'Raw profile type iptc', text: encodeProfile('IPTC profile', b), compressed: true, lang: '', translated: '' }));
+  const iptcChunk = regen(plan.iptc, (b) =>
+    encodeText({ type: 'zTXt', keyword: 'Raw profile type iptc', text: encodeProfile('IPTC profile', b), compressed: true, lang: '', translated: '' }),
+  );
   const timeChunk = regen(plan.time, (b) => makeChunk('tIME', b));
   const placed = { exif: false, xmp: false, iptc: false, time: false, texts: false };
   const place = (key: 'exif' | 'xmp' | 'iptc' | 'time', chunk: Uint8Array | null | undefined) => {

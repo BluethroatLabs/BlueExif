@@ -56,21 +56,7 @@ const ICC_ID = 'ICC_PROFILE\0';
 const MPF_ID = 'MPF\0';
 const MAX_SEG = 65533;
 
-type SegKind =
-  | 'jfif'
-  | 'jfxx'
-  | 'exif'
-  | 'xmp'
-  | 'xmpext'
-  | 'irb'
-  | 'icc'
-  | 'mpf'
-  | 'adobe'
-  | 'ducky'
-  | 'c2pa'
-  | 'com'
-  | 'app'
-  | 'other';
+type SegKind = 'jfif' | 'jfxx' | 'exif' | 'xmp' | 'xmpext' | 'irb' | 'icc' | 'mpf' | 'adobe' | 'ducky' | 'c2pa' | 'com' | 'app' | 'other';
 
 interface Segment {
   marker: number;
@@ -418,7 +404,12 @@ export async function readJpeg(src: Source): Promise<Metadata> {
   const ext = j.segments.filter((s) => s.kind === 'xmpext');
   if (ext.length) {
     const size = ext.reduce((n, s) => n + s.data.length, 0);
-    other.push(rawField('jpeg:xmpext', 'Extended XMP', `${ext.length} segment${ext.length > 1 ? 's' : ''}, ${formatBytes(size)} (e.g. depth maps, HDR data)`, { sensitivity: 'content', tag: 'APP1 XMP extension' }));
+    other.push(
+      rawField('jpeg:xmpext', 'Extended XMP', `${ext.length} segment${ext.length > 1 ? 's' : ''}, ${formatBytes(size)} (e.g. depth maps, HDR data)`, {
+        sensitivity: 'content',
+        tag: 'APP1 XMP extension',
+      }),
+    );
   }
   if (irb) {
     const rest = irb.filter((x) => x.id !== IRB_IPTC && x.id !== IRB_IPTC_DIGEST);
@@ -473,7 +464,10 @@ export async function readJpeg(src: Source): Promise<Metadata> {
 function seg(marker: number, payload: Uint8Array): Uint8Array {
   if (payload.length > MAX_SEG) throw new MetadataError(`JPEG segment too large (${payload.length} bytes)`);
   const w = new Writer(false, payload.length + 4);
-  w.u8(0xff).u8(marker).u16(payload.length + 2).bytes(payload);
+  w.u8(0xff)
+    .u8(marker)
+    .u16(payload.length + 2)
+    .bytes(payload);
   return w.finish();
 }
 

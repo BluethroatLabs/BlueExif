@@ -9,9 +9,7 @@ export type WorkerRequest =
   | { id: number; op: 'write'; blob: Blob; name: string; edits: Edits; password?: string }
   | { id: number; op: 'strip'; blob: Blob; name: string; opts: StripOptions; password?: string };
 
-export type WorkerResponse =
-  | { id: number; ok: true; result: unknown }
-  | { id: number; ok: false; error: string; code?: MetadataErrorCode };
+export type WorkerResponse = { id: number; ok: true; result: unknown } | { id: number; ok: false; error: string; code?: MetadataErrorCode };
 
 export interface FormatSummary {
   id: string;

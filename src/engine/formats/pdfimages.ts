@@ -105,8 +105,7 @@ const FILTER_ALIAS: Record<string, string> = {
   JPX: 'JPXDecode',
 };
 
-const nameOf = (lib: PdfLib, o: PDFObject | undefined): string | undefined =>
-  o instanceof lib.PDFName ? o.decodeText() : undefined;
+const nameOf = (lib: PdfLib, o: PDFObject | undefined): string | undefined => (o instanceof lib.PDFName ? o.decodeText() : undefined);
 
 const refKey = (r: PDFRef) => `${r.objectNumber} ${r.generationNumber}`;
 const fieldId = (r: PDFRef) => `${ID_PREFIX}${r.objectNumber}-${r.generationNumber}`;
@@ -777,7 +776,10 @@ function fragments(b: Uint8Array, boxes: Box[]): Array<[number, number]> | null 
 function boxHeader(type: string, size: number): Uint8Array {
   const w = new Writer(false, 16);
   if (size + 8 <= 0xffffffff) w.u32(size + 8).ascii(type);
-  else w.u32(1).ascii(type).u64(size + 16);
+  else
+    w.u32(1)
+      .ascii(type)
+      .u64(size + 16);
   return w.finish();
 }
 
@@ -925,7 +927,8 @@ function inlineAt(lx: Lexer, index: number): Inline | null {
   const start = idEnd + (isWs(c[idEnd]) ? 1 : 0);
   const filters = inlineFilters(dict);
   const first = filters?.[0];
-  const found = first === 'DCTDecode' ? dctEnd(c, start) : first === 'ASCII85Decode' ? eodEnd(c, start, true) : first === 'ASCIIHexDecode' ? eodEnd(c, start, false) : null;
+  const found =
+    first === 'DCTDecode' ? dctEnd(c, start) : first === 'ASCII85Decode' ? eodEnd(c, start, true) : first === 'ASCIIHexDecode' ? eodEnd(c, start, false) : null;
   const [end, next] = found ?? defaultEnd(c, start) ?? [-1, -1];
   if (end < 0) return null;
   return { index, dict, filters, start, end, next, len };
@@ -992,7 +995,9 @@ function eodEnd(c: Uint8Array, start: number, a85: boolean): [number, number] | 
 
 /** Content operators: an "EI" is only accepted when a known operator follows (pdf.js checks the same). */
 const OPERATORS = new Set(
-  "b B b* B* BDC BI BMC BT BX c cm CS cs d d0 d1 Do DP EI EMC ET EX f F f* G g gs h i ID j J K k l m M MP n q Q re RG rg ri s S SC sc SCN scn sh T* Tc Td TD Tf Tj TJ TL Tm Tr Ts Tw Tz v w W W* y ' \"".split(' '),
+  'b B b* B* BDC BI BMC BT BX c cm CS cs d d0 d1 Do DP EI EMC ET EX f F f* G g gs h i ID j J K k l m M MP n q Q re RG rg ri s S SC sc SCN scn sh T* Tc Td TD Tf Tj TJ TL Tm Tr Ts Tw Tz v w W W* y \' "'.split(
+    ' ',
+  ),
 );
 
 /** Other filters: the first "EI" followed by whitespace and plausible content (pdf.js's findDefaultInlineStreamEnd). */
@@ -1373,11 +1378,7 @@ function itemField(it: Item, pages: number[] | undefined): Field {
   return rawField(it.id, it.label, [where, it.what, ...it.f.parts].filter(Boolean).join(' · '), {
     sensitivity: it.f.sensitivity,
     tag: it.tag,
-    description: it.stuck
-      ? `BlueExif cannot clean this picture: ${it.stuck}. Its metadata stays in saved copies.`
-      : it.thumb
-        ? THUMB_DESCRIPTION
-        : DESCRIPTION,
+    description: it.stuck ? `BlueExif cannot clean this picture: ${it.stuck}. Its metadata stays in saved copies.` : it.thumb ? THUMB_DESCRIPTION : DESCRIPTION,
     removable: !it.stuck,
   });
 }

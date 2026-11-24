@@ -15,7 +15,10 @@ import { edits, REMOVE } from '../test/helpers';
 describe('binary', () => {
   it('reads and writes both endiannesses', () => {
     const w = new Writer(true);
-    w.u16(0x1234).u32(0xdeadbeef).u64(2 ** 40 + 5).u24(0xabcdef);
+    w.u16(0x1234)
+      .u32(0xdeadbeef)
+      .u64(2 ** 40 + 5)
+      .u24(0xabcdef);
     const r = new Reader(w.finish(), true);
     expect(r.u16()).toBe(0x1234);
     expect(r.u32()).toBe(0xdeadbeef);

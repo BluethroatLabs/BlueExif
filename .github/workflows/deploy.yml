@@ -1,0 +1,84 @@
+name: Deploy
+
+# Pushing a v* tag publishes that commit: `git tag v0.1.0 && git push origin v0.1.0`.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+
+  deploy:
+    needs: ci
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # OIDC only, no stored credential. Azure trusts this job by its environment,
+    # so the federated credential's subject must be
+    #   repo:BluethroatLabs@116263537/BlueExif@1452488523:environment:production
+    # (audience api://AzureADTokenExchange). If it differs, the login step fails
+    # with AADSTS700213 and prints the subject GitHub presented.
+    # Repository secrets: AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+    environment:
+      name: production
+      url: https://blueexif.bluethroatlabs.com
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Require the tagged commit to be on main
+        run: |
+          set -euo pipefail
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "${GITHUB_REF_NAME} points at ${GITHUB_SHA}, which is not on main." >&2
+            exit 1
+          fi
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "22"
+          package-manager-cache: false
+      - run: npm ci
+      - name: Require Azure login settings
+        env:
+          AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+          AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+          AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+        run: |
+          set -euo pipefail
+          missing=()
+          [[ -n "${AZURE_CLIENT_ID}" ]] || missing+=("AZURE_CLIENT_ID")
+          [[ -n "${AZURE_TENANT_ID}" ]] || missing+=("AZURE_TENANT_ID")
+          [[ -n "${AZURE_SUBSCRIPTION_ID}" ]] || missing+=("AZURE_SUBSCRIPTION_ID")
+          if ((${#missing[@]})); then
+            echo "Add these Actions repository secrets before deploy can run: ${missing[*]}" >&2
+            exit 1
+          fi
+      - name: Azure login
+        uses: azure/login@a641126d1b8aa4d1fa005f4f92df94a3a4c4c906 # v3.1.0
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      # Storage and upload only. The CI identity can run deployments in the group
+      # and has Contributor on BlueExif's storage account, nothing else, so Front
+      # Door changes still go out with `just deploy`.
+      - name: Deploy static site
+        env:
+          AZURE_CORE_OUTPUT: none
+          SUBSCRIPTION: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+          RG: rg-bluemask-wehi-sandbox
+          PREFIX: blueexif
+          LOCATION: centralindia
+          DEPLOY_FRONT_DOOR: "false"
+        run: ./infra/deploy.sh

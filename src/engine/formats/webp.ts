@@ -199,7 +199,12 @@ export async function readWebp(src: Source): Promise<Metadata> {
     other.push(rawField(`webp:chunk:${i}`, `Private chunk ${chunkName(c.id)}`, formatBytes(c.data.length), { tag: c.id, sensitivity: 'content' }));
   });
   if (w.trailer.length > 16 || w.trailer.some((b) => b !== 0)) {
-    other.push(rawField('webp:trailer', 'Data after image', `${formatBytes(w.trailer.length)} after the end of the image`, { tag: 'after RIFF', sensitivity: 'content' }));
+    other.push(
+      rawField('webp:trailer', 'Data after image', `${formatBytes(w.trailer.length)} after the end of the image`, {
+        tag: 'after RIFF',
+        sensitivity: 'content',
+      }),
+    );
   }
   if (other.length) groups.push({ id: 'webp.other', label: 'Embedded data', source: 'WebP', fields: other });
 
@@ -263,7 +268,9 @@ function assemble(w: Webp, plan: Plan): Blob {
     const bs = firstBitstream(w);
     if (!bs) throw new MetadataError('Unsupported WebP bitstream: image size not found');
     const wr = new Writer(true, 10);
-    wr.u32(0).u24(bs.width - 1).u24(bs.height - 1);
+    wr.u32(0)
+      .u24(bs.width - 1)
+      .u24(bs.height - 1);
     header = wr.finish();
     flags = (bs.alpha ? F_ALPHA : 0) | (has('ANIM') ? F_ANIM : 0);
   }

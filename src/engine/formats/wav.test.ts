@@ -152,7 +152,14 @@ describe('wav', () => {
     expect(chunkIds(bytes)).toEqual(['fmt ', 'data', 'cue ']);
     const et = await exiftool(bytes, 'out.wav');
     expect(etProblems(et)).toEqual([]);
-    expect(etMetaKeys(et).sort()).toEqual(['RIFF:AvgBytesPerSec', 'RIFF:BitsPerSample', 'RIFF:CuePoints', 'RIFF:Encoding', 'RIFF:NumChannels', 'RIFF:SampleRate']);
+    expect(etMetaKeys(et).sort()).toEqual([
+      'RIFF:AvgBytesPerSec',
+      'RIFF:BitsPerSample',
+      'RIFF:CuePoints',
+      'RIFF:Encoding',
+      'RIFF:NumChannels',
+      'RIFF:SampleRate',
+    ]);
     const m = await wavHandler.read(new Source(out));
     expect(allFields(m)).toEqual([]);
     await sameAudio(out, 'audio/bwf.wav');

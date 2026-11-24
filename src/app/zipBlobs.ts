@@ -75,7 +75,9 @@ export async function zipBlobs(entries: ZipBlobEntry[], date: Date, max32 = 0xff
     cw.u32(SIG_CENTRAL).u16(version).u16(version).u16(UTF8_NAMES).u16(0).u16(t.time).u16(t.date).u32(crc);
     cw.u32(big ? 0xffffffff : size).u32(big ? 0xffffffff : size);
     cw.u16(nameBytes.length).u16(centralExtra.length).u16(0).u16(0).u16(0).u32(0);
-    cw.u32(far ? 0xffffffff : offset).bytes(nameBytes).bytes(centralExtra);
+    cw.u32(far ? 0xffffffff : offset)
+      .bytes(nameBytes)
+      .bytes(centralExtra);
     central.push(cw.finish());
 
     parts.push(local, blob);
@@ -90,13 +92,18 @@ export async function zipBlobs(entries: ZipBlobEntry[], date: Date, max32 = 0xff
   if (zip64) {
     const ew = new Writer(true, 56 + 20);
     ew.u32(SIG_EOCD64).u64(44).u16(45).u16(45).u32(0).u32(0).u64(count).u64(count).u64(cdSize).u64(cdStart);
-    ew.u32(SIG_LOCATOR64).u32(0).u64(cdStart + cdSize).u32(1);
+    ew.u32(SIG_LOCATOR64)
+      .u32(0)
+      .u64(cdStart + cdSize)
+      .u32(1);
     parts.push(ew.finish());
   }
   const ew = new Writer(true, 22);
   ew.u32(SIG_EOCD).u16(0).u16(0);
   ew.u16(zip64 ? 0xffff : count).u16(zip64 ? 0xffff : count);
-  ew.u32(zip64 ? 0xffffffff : cdSize).u32(zip64 ? 0xffffffff : cdStart).u16(0);
+  ew.u32(zip64 ? 0xffffffff : cdSize)
+    .u32(zip64 ? 0xffffffff : cdStart)
+    .u16(0);
   parts.push(ew.finish());
   return toBlob(parts, 'application/zip');
 }

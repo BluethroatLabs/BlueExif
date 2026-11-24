@@ -82,13 +82,7 @@ export function escapeText(s: string): string {
 }
 
 export function escapeAttr(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/"/g, '&quot;')
-    .replace(/\n/g, '&#xA;')
-    .replace(/\r/g, '&#xD;')
-    .replace(/\t/g, '&#x9;');
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/"/g, '&quot;').replace(/\n/g, '&#xA;').replace(/\r/g, '&#xD;').replace(/\t/g, '&#x9;');
 }
 
 /** Remove characters that are illegal in XML 1.0. */

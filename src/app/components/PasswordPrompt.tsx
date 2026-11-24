@@ -12,8 +12,8 @@ export function PasswordPrompt({ file }: { file: FileEntry }) {
     <div className="state-box">
       <h3>Password protected</h3>
       <p>
-        <b>{file.name}</b> is encrypted. Enter its password to view and clean it. The password stays in this tab and
-        is never stored; cleaned copies are saved without a password.
+        <b>{file.name}</b> is encrypted. Enter its password to view and clean it. The password stays in this tab and is never stored; cleaned copies are saved
+        without a password.
       </p>
       <form
         className="password-form"

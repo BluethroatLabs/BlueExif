@@ -95,8 +95,6 @@ function call<T>(req: Request): Promise<T> {
 export const engine = {
   formats: () => call<FormatSummary[]>({ op: 'formats' }),
   read: (blob: Blob, name: string, password?: string) => call<Metadata>({ op: 'read', blob, name, password }),
-  write: (blob: Blob, name: string, edits: Edits, password?: string) =>
-    call<Blob>({ op: 'write', blob, name, edits, password }),
-  strip: (blob: Blob, name: string, opts: StripOptions, password?: string) =>
-    call<Blob>({ op: 'strip', blob, name, opts, password }),
+  write: (blob: Blob, name: string, edits: Edits, password?: string) => call<Blob>({ op: 'write', blob, name, edits, password }),
+  strip: (blob: Blob, name: string, opts: StripOptions, password?: string) => call<Blob>({ op: 'strip', blob, name, opts, password }),
 };

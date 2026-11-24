@@ -248,7 +248,13 @@ function parseInfo(data: Uint8Array): InfoItemRaw[] {
     const id = latin1(data.subarray(p, p + 4));
     const size = r.u32(p + 4);
     const v = data.subarray(p + 8, Math.min(data.length, p + 8 + size));
-    out.push({ id, value: utf8OrLatin1(v).replace(/\0[\s\S]*$/, '').trimEnd(), raw: v });
+    out.push({
+      id,
+      value: utf8OrLatin1(v)
+        .replace(/\0[\s\S]*$/, '')
+        .trimEnd(),
+      raw: v,
+    });
     p += 8 + size + (size & 1);
   }
   return out;
@@ -258,7 +264,14 @@ function serializeInfo(items: InfoItemRaw[]): Uint8Array {
   const w = new Writer(true, 256);
   w.ascii('INFO');
   for (const it of items) {
-    const v = it.raw && it.value === utf8OrLatin1(it.raw).replace(/\0[\s\S]*$/, '').trimEnd() ? it.raw : concat([encodeUtf8(it.value), new Uint8Array([0])]);
+    const v =
+      it.raw &&
+      it.value ===
+        utf8OrLatin1(it.raw)
+          .replace(/\0[\s\S]*$/, '')
+          .trimEnd()
+        ? it.raw
+        : concat([encodeUtf8(it.value), new Uint8Array([0])]);
     w.ascii(it.id).u32(v.length).bytes(v);
     if (v.length & 1) w.u8(0);
   }
@@ -309,7 +322,10 @@ const BEXT_TEXT: Array<{ key: string; label: string; at: number; len: number; se
   { key: 'originatorReference', label: 'Originator reference', at: 288, len: 32, sens: 'identity' },
 ];
 
-const fixedStr = (b: Uint8Array, at: number, len: number) => utf8OrLatin1(b.subarray(at, at + len)).replace(/\0[\s\S]*$/, '').trimEnd();
+const fixedStr = (b: Uint8Array, at: number, len: number) =>
+  utf8OrLatin1(b.subarray(at, at + len))
+    .replace(/\0[\s\S]*$/, '')
+    .trimEnd();
 
 /** UTF-8 bytes of `s`, cut to `max` bytes without splitting a character. */
 function fitUtf8(s: string, max: number): Uint8Array {
@@ -334,20 +350,39 @@ function bextGroup(b: Uint8Array): FieldGroup {
   const fields: Field[] = [];
   for (const t of BEXT_TEXT) {
     const v = fixedStr(b, t.at, t.len);
-    if (v) fields.push(makeField({ id: `wav:bext:${t.key}`, label: t.label, kind: 'text', sensitivity: t.sens, tag: `bext ${t.label}`, placeholder: `max ${t.len} bytes` }, v));
+    if (v)
+      fields.push(
+        makeField({ id: `wav:bext:${t.key}`, label: t.label, kind: 'text', sensitivity: t.sens, tag: `bext ${t.label}`, placeholder: `max ${t.len} bytes` }, v),
+      );
   }
   const date = bextDate(b);
-  if (date && parseDate(date)) fields.push(makeField({ id: 'wav:bext:origination', label: 'Origination date', kind: 'datetime', sensitivity: 'time', tag: 'bext OriginationDate/Time' }, date, { display: displayDate(date) }));
+  if (date && parseDate(date))
+    fields.push(
+      makeField({ id: 'wav:bext:origination', label: 'Origination date', kind: 'datetime', sensitivity: 'time', tag: 'bext OriginationDate/Time' }, date, {
+        display: displayDate(date),
+      }),
+    );
   const r = new Reader(b, true);
   if (b.length >= 346) {
     const ref = r.u32(342) * 0x1_0000_0000 + r.u32(338);
-    if (ref) fields.push(rawField('wav:bext:timeReference', 'Time reference', `${ref} samples after midnight`, { sensitivity: 'time', tag: 'bext TimeReference' }));
+    if (ref)
+      fields.push(rawField('wav:bext:timeReference', 'Time reference', `${ref} samples after midnight`, { sensitivity: 'time', tag: 'bext TimeReference' }));
   }
   if (b.length >= 412 && b.subarray(348, 412).some((x) => x !== 0)) {
-    fields.push(rawField('wav:bext:umid', 'UMID', 'Unique material identifier (may encode device, time and place)', { sensitivity: 'device', tag: 'bext UMID' }));
+    fields.push(
+      rawField('wav:bext:umid', 'UMID', 'Unique material identifier (may encode device, time and place)', { sensitivity: 'device', tag: 'bext UMID' }),
+    );
   }
-  const history = b.length > BEXT_FIXED ? utf8OrLatin1(b.subarray(BEXT_FIXED)).replace(/\0[\s\S]*$/, '').trimEnd() : '';
-  if (history) fields.push(makeField({ id: 'wav:bext:codingHistory', label: 'Coding history', kind: 'multiline', sensitivity: 'software', tag: 'bext CodingHistory' }, history));
+  const history =
+    b.length > BEXT_FIXED
+      ? utf8OrLatin1(b.subarray(BEXT_FIXED))
+          .replace(/\0[\s\S]*$/, '')
+          .trimEnd()
+      : '';
+  if (history)
+    fields.push(
+      makeField({ id: 'wav:bext:codingHistory', label: 'Coding history', kind: 'multiline', sensitivity: 'software', tag: 'bext CodingHistory' }, history),
+    );
   const present = new Set(fields.map((f) => f.id));
   const specs: FieldSpec[] = [
     ...BEXT_TEXT.map((t): FieldSpec => ({ id: `wav:bext:${t.key}`, label: t.label, kind: 'text', sensitivity: t.sens })),

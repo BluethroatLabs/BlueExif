@@ -69,7 +69,9 @@ describe('droppedFiles', () => {
       isDirectory: true,
       createReader: () => {
         let read = false;
-        return { readEntries: (ok: (b: FileSystemEntry[]) => void) => setTimeout(() => ok(read ? [] : ((read = true), [loop as unknown as FileSystemEntry, inner]))) };
+        return {
+          readEntries: (ok: (b: FileSystemEntry[]) => void) => setTimeout(() => ok(read ? [] : ((read = true), [loop as unknown as FileSystemEntry, inner]))),
+        };
       },
     };
     const dt = { items: [{ kind: 'file', webkitGetAsEntry: () => loop }], files: [] } as unknown as DataTransfer;

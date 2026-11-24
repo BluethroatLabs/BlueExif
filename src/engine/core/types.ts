@@ -38,17 +38,7 @@ export type Sensitivity = 'location' | 'identity' | 'device' | 'time' | 'softwar
  * optional fraction and an optional "Z" / "+HH:MM" suffix. Handlers convert to
  * and from their native representation.
  */
-export type FieldKind =
-  | 'text'
-  | 'multiline'
-  | 'integer'
-  | 'number'
-  | 'datetime'
-  | 'enum'
-  | 'list'
-  | 'gps'
-  | 'image'
-  | 'raw';
+export type FieldKind = 'text' | 'multiline' | 'integer' | 'number' | 'datetime' | 'enum' | 'list' | 'gps' | 'image' | 'raw';
 
 export interface GpsValue {
   lat: number;

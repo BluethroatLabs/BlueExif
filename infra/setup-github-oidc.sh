@@ -1,7 +1,12 @@
 #!/usr/bin/env bash
-# One Entra app per repo, trusted only for that repo's main branch, with
-# Contributor on that repo's resource group. Re-running updates GitHub secrets
-# and leaves existing apps, trusts, and role assignments in place.
+# One Entra app per repo, trusted only for jobs in that repo's production
+# environment (which GitHub restricts to v* tags). In the resource group it may
+# run deployments ("<Repo> Deployment Operator") and has Contributor on that
+# repo's own storage account, nothing else: the group holds other projects too.
+# Re-running updates GitHub secrets and leaves existing apps, trusts, roles and
+# environment protection in place; it never adds a second trust to an app.
+#
+# The storage account must exist first (`just deploy` creates it).
 #
 # Checks every prerequisite and exits before creating anything if one is missing.
 #
@@ -12,10 +17,11 @@ SUBSCRIPTION="1e238434-310b-4bcd-ab1f-a9381d170243"
 ORG="BluethroatLabs"
 ISSUER="https://token.actions.githubusercontent.com"
 AUDIENCE="api://AzureADTokenExchange"
-BRANCH="main"
+ENVIRONMENT="production"
+TAG_PATTERN="v*"
 # BlueExif's storage lives in BlueMask's group. CI deploys with
 # DEPLOY_FRONT_DOOR=false, so it needs no role on the shared Front Door group.
-ROWS='blueexif|github-blueexif|rg-bluemask-wehi-sandbox
+ROWS='BlueExif|github-blueexif|rg-bluemask-wehi-sandbox
 '
 
 failures=0
@@ -63,7 +69,7 @@ check_row() {
   if ! scope="$(az group show --name "$rg" --query id --output tsv 2>/dev/null)"; then
     note "Resource group ${rg} does not exist in subscription ${SUBSCRIPTION}."
   elif ! az role assignment list --scope "$scope" --fill-principal-name false --query "[0].id" --output tsv >/dev/null 2>&1; then
-    note "This Azure login cannot read role assignments on ${rg}. It needs Owner or Role Based Access Control Administrator there."
+    note "This Azure login cannot read role assignments on ${rg}. It needs Owner there (it creates a role definition and assigns roles)."
   fi
   admin="$(gh api "repos/${ORG}/${repo}" --jq '.permissions.admin')"
   if [[ "$admin" != "true" ]]; then
@@ -80,12 +86,12 @@ fi
 tmpdir="$(mktemp -d)"
 trap 'rm -rf "$tmpdir"' EXIT
 
-assign_contributor() {
-  local sp_id="$1" scope="$2" rg="$3" err attempt
+assign_role() {
+  local role="$1" sp_id="$2" scope="$3" err attempt
   err="$tmpdir/role.err"
   for attempt in 1 2 3 4 5 6 7 8 9 10; do
     if az role assignment create \
-      --role Contributor \
+      --role "$role" \
       --assignee-object-id "$sp_id" \
       --assignee-principal-type ServicePrincipal \
       --scope "$scope" \
@@ -97,71 +103,58 @@ assign_contributor() {
     fi
     if grep -q 'AuthorizationFailed' "$err"; then
       cat "$err" >&2
-      echo "This login cannot assign Contributor on ${rg}." >&2
+      echo "This login cannot assign ${role} on ${scope}." >&2
       return 1
     fi
-    if ! grep -Eq 'PrincipalNotFound|does not exist in the directory' "$err"; then
+    # A new service principal or role definition takes a while to be visible.
+    if ! grep -Eq 'PrincipalNotFound|does not exist in the directory|RoleDefinitionDoesNotExist' "$err"; then
       cat "$err" >&2
       return 1
     fi
     sleep 10
   done
   cat "$err" >&2
-  echo "Entra has not published the service principal for ${rg} yet." >&2
+  echo "Azure has not published the service principal or the role ${role} yet." >&2
   return 1
 }
 
-configure_row() {
-  local repo="$1" app="$2" rg="$3"
-  local subject scope app_ids app_id sp_id count assigned existing_subject existing_name
-  subject="repo:${ORG}/${repo}:ref:refs/heads/${BRANCH}"
-  scope="$(az group show --name "$rg" --query id --output tsv)"
-  echo "Configuring ${ORG}/${repo}"
-
-  app_ids="$(az ad app list --display-name "$app" --query "[?displayName=='${app}'].appId" --output tsv)"
-  count="$(printf '%s\n' "$app_ids" | sed '/^$/d' | wc -l | tr -d ' ')"
-  if [[ "$count" -gt 1 ]]; then
-    echo "More than one Entra app is named ${app}. Stop and delete the extra before re-running." >&2
-    exit 1
-  fi
-  if [[ "$count" -eq 0 ]]; then
-    app_id="$(az ad app create --display-name "$app" --sign-in-audience AzureADMyOrg --query appId --output tsv)"
-  else
-    app_id="$app_ids"
-  fi
-
-  sp_id="$(az ad sp show --id "$app_id" --query id --output tsv 2>/dev/null || true)"
-  if [[ -z "$sp_id" ]]; then
-    sp_id="$(az ad sp create --id "$app_id" --query id --output tsv)"
-  fi
-
-  existing_subject="$(az ad app federated-credential list --id "$app_id" --query "[?subject=='${subject}'].name" --output tsv)"
-  if [[ -z "$existing_subject" ]]; then
-    existing_name="$(az ad app federated-credential list --id "$app_id" --query "[?name=='github-actions-main'].subject" --output tsv)"
-    if [[ -n "$existing_name" ]]; then
-      echo "App ${app} already has federated credential github-actions-main for ${existing_name}, not ${subject}." >&2
-      exit 1
-    fi
-    cat > "$tmpdir/credential.json" <<EOF
+ensure_role() {
+  local role="$1" sp_id="$2" scope="$3" assigned
+  role="${repo} Deployment Operator"
+  if [[ -z "$(az role definition list --name "$role" --scope "$scope" --query "[0].name" --output tsv)" ]]; then
+    cat > "$tmpdir/role.json" <<EOF
 {
-  "name": "github-actions-main",
-  "issuer": "${ISSUER}",
-  "subject": "${subject}",
-  "audiences": ["${AUDIENCE}"]
+  "Name": "${role}",
+  "Description": "Run resource group deployments for ${repo}.",
+  "Actions": [
+    "Microsoft.Resources/deployments/*",
+    "Microsoft.Resources/subscriptions/resourceGroups/read"
+  ],
+  "AssignableScopes": ["${scope}"]
 }
 EOF
-    az ad app federated-credential create --id "$app_id" --parameters "$tmpdir/credential.json" --output none
+    az role definition create --role-definition "$tmpdir/role.json" --output none
   fi
+  storage="$(az storage account list --resource-group "$rg" \
+    --query "[?starts_with(name, 'st$(printf '%s' "$repo" | tr '[:upper:]' '[:lower:]')')].id" --output tsv)"
+  if [[ -z "$storage" || "$storage" == *$'\n'* ]]; then
+    echo "Expected exactly one ${repo} storage account in ${rg} (just deploy creates it). Found: ${storage:-none}" >&2
+    exit 1
+  fi
+  ensure_role "$role" "$sp_id" "$scope"
+  ensure_role Contributor "$sp_id" "$storage"
 
-  assigned="$(az role assignment list \
-    --assignee-object-id "$sp_id" \
-    --scope "$scope" \
-    --role Contributor \
-    --fill-principal-name false \
-    --query "length([?scope=='${scope}'])" \
-    --output tsv)"
-  if [[ "${assigned:-0}" -eq 0 ]]; then
-    assign_contributor "$sp_id" "$scope" "$rg"
+  # Deployments to the environment are only accepted from tags matching
+  # TAG_PATTERN. An existing environment keeps its reviewers and other rules.
+  if ! gh api "repos/${ORG}/${repo}/environments/${ENVIRONMENT}" --silent 2>/dev/null; then
+    gh api --method PUT "repos/${ORG}/${repo}/environments/${ENVIRONMENT}" \
+      -F 'deployment_branch_policy[protected_branches]=false' \
+      -F 'deployment_branch_policy[custom_branch_policies]=true' --silent
+  fi
+  if [[ -z "$(gh api "repos/${ORG}/${repo}/environments/${ENVIRONMENT}/deployment-branch-policies" \
+    --jq ".branch_policies[] | select(.type == \"tag\" and .name == \"${TAG_PATTERN}\") | .name")" ]]; then
+    gh api --method POST "repos/${ORG}/${repo}/environments/${ENVIRONMENT}/deployment-branch-policies" \
+      -f name="$TAG_PATTERN" -f type=tag --silent
   fi
 
   printf '%s' "$app_id" | gh secret set AZURE_CLIENT_ID --repo "${ORG}/${repo}"

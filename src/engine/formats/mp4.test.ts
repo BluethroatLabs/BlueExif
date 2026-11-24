@@ -94,7 +94,9 @@ const MOOV_CONTAINERS = new Set(['trak', 'mdia', 'minf', 'stbl', 'dinf', 'udta',
 
 async function moovOf(bytes: Uint8Array): Promise<BoxNode> {
   const box = (await scanTopLevel(Source.fromBytes(bytes))).boxes.find((b) => b.type === 'moov')!;
-  const tree = parseBoxes(bytes.subarray(box.start + box.headerSize, box.end), 0, box.size - box.headerSize, (t) => (MOOV_CONTAINERS.has(t) ? 0 : null), ['moov']);
+  const tree = parseBoxes(bytes.subarray(box.start + box.headerSize, box.end), 0, box.size - box.headerSize, (t) => (MOOV_CONTAINERS.has(t) ? 0 : null), [
+    'moov',
+  ]);
   return { type: 'moov', children: tree.boxes, tail: tree.tail };
 }
 
@@ -150,7 +152,22 @@ const trakByHandler = (moov: BoxNode, ...h: string[]) => childrenOf(moov, 'trak'
 async function withTelemetry(base: string, entry: string, movflags: string[], fixedSize = false): Promise<Uint8Array> {
   const ext = base.split('.').pop()!;
   const muxed = ffmpeg({ [`in.${ext}`]: fixtureBytes(`isobmff/${base}`), 'gps.srt': SRT }, `out.${ext}`, (p) => [
-    '-i', p(`in.${ext}`), '-i', p('gps.srt'), '-map', '0:v', '-map', '0:a', '-map', '1', '-c', 'copy', '-c:s', 'mov_text', ...movflags, p(`out.${ext}`),
+    '-i',
+    p(`in.${ext}`),
+    '-i',
+    p('gps.srt'),
+    '-map',
+    '0:v',
+    '-map',
+    '0:a',
+    '-map',
+    '1',
+    '-c',
+    'copy',
+    '-c:s',
+    'mov_text',
+    ...movflags,
+    p(`out.${ext}`),
   ]);
   return editMoov(muxed, (moov) => {
     const trak = trakByHandler(moov, 'sbtl', 'text')!;
@@ -286,9 +303,8 @@ describe('mp4: reading', () => {
 describe('mp4: writing', () => {
   it('edits tags of a fast-start MP4 and relocates chunk offsets', async () => {
     const original = fixtureBytes('isobmff/tagged.mp4');
-    const pngBytes = Uint8Array.from(
-      atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
-      (c) => c.charCodeAt(0),
+    const pngBytes = Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), (c) =>
+      c.charCodeAt(0),
     );
     const out = await mp4Handler.write!(
       fixture('isobmff/tagged.mp4'),
@@ -426,7 +442,13 @@ describe('mp4: writing', () => {
     const out = await mp4Handler.write!(Source.fromBytes(original, 'z.mp4'), edits({ 'mp4:ilst:©nam': 'Longer title '.repeat(30) }));
     const bytes = await bytesOf(out);
     const top = await scanTopLevel(Source.fromBytes(bytes));
-    expect(top.boxes.map((b) => [b.type, b.toEnd])).toEqual([['ftyp', false], ['moov', false], ['free', false], ['uuid', false], ['mdat', true]]);
+    expect(top.boxes.map((b) => [b.type, b.toEnd])).toEqual([
+      ['ftyp', false],
+      ['moov', false],
+      ['free', false],
+      ['uuid', false],
+      ['mdat', true],
+    ]);
     expect(await newProblems(bytes, original, 'z.mp4')).toEqual([]);
     expectSamePayload(bytes, original, 'z.mp4');
   });
@@ -632,7 +654,11 @@ describe.runIf(hasFfmpeg)('mp4: timed-metadata tracks', () => {
   // A damaged index: the first telemetry chunk overlaps the mdat header, or the first video chunk.
   const corruptions: Array<[string, RegExp, (moov: BoxNode, mdatStart: number) => number]> = [
     ['point outside the media data', /outside the media data/, (_, mdat) => mdat],
-    ['overlap another track', /overlap those of another track/, (moov) => new Reader(findPath(trakByHandler(moov, 'vide'), 'mdia/minf/stbl/stco')!.data!).u32(8)],
+    [
+      'overlap another track',
+      /overlap those of another track/,
+      (moov) => new Reader(findPath(trakByHandler(moov, 'vide'), 'mdia/minf/stbl/stco')!.data!).u32(8),
+    ],
   ];
   for (const [what, msg, at] of corruptions) {
     it(`keeps the track when its samples ${what}`, async () => {

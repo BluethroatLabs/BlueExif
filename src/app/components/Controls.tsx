@@ -51,7 +51,11 @@ function Thumb({ file }: { file: FileEntry }) {
   if (isPdf) {
     return (
       <span className="thumb pdf" ref={pdf.ref}>
-        {pdf.page ? <img className="pdf-page" src={pdf.page.url} width={pdf.page.width} height={pdf.page.height} alt="" /> : <Icon name={categoryIcon(file.meta)} />}
+        {pdf.page ? (
+          <img className="pdf-page" src={pdf.page.url} width={pdf.page.width} height={pdf.page.height} alt="" />
+        ) : (
+          <Icon name={categoryIcon(file.meta)} />
+        )}
       </span>
     );
   }
@@ -168,11 +172,7 @@ function PersonalMenu({ file }: { file: FileEntry }) {
           <p className="menu-title">Remove fields about</p>
           {SENS_ORDER.map((s) => (
             <label key={s}>
-              <input
-                type="checkbox"
-                checked={cats.includes(s)}
-                onChange={(e) => setCats(e.target.checked ? [...cats, s] : cats.filter((c) => c !== s))}
-              />
+              <input type="checkbox" checked={cats.includes(s)} onChange={(e) => setCats(e.target.checked ? [...cats, s] : cats.filter((c) => c !== s))} />
               <span>{SENS[s].label}</span>
               <span className="hint">{counts.get(s) ?? 0}</span>
             </label>
@@ -303,12 +303,7 @@ export function ControlsExport() {
       </button>
       {files.length > 1 && (
         <>
-          <button
-            className="btn"
-            type="button"
-            aria-disabled={!strippable.length || busy}
-            onClick={() => strippable.length && !busy && openStrip(strippable)}
-          >
+          <button className="btn" type="button" aria-disabled={!strippable.length || busy} onClick={() => strippable.length && !busy && openStrip(strippable)}>
             Strip {strippable.length === files.length ? 'all ' : ''}
             {strippable.length} file{strippable.length === 1 ? '' : 's'}…
           </button>
@@ -318,11 +313,7 @@ export function ControlsExport() {
         </>
       )}
       {ready && (
-        <button
-          className="btn text sm"
-          type="button"
-          onClick={() => exportReport(file!.id, (f) => valueText(f.kind, f.value, f.display))}
-        >
+        <button className="btn text sm" type="button" onClick={() => exportReport(file!.id, (f) => valueText(f.kind, f.value, f.display))}>
           Metadata report (JSON)
         </button>
       )}

@@ -218,9 +218,7 @@ function expandEntities(src: string): { text: string; subset: number; problem?: 
           }),
     )
     .join('');
-  const problem = problems.size
-    ? `This SVG uses ${[...problems].join(', ')}; it cannot be rewritten without changing its meaning.`
-    : undefined;
+  const problem = problems.size ? `This SVG uses ${[...problems].join(', ')}; it cannot be rewritten without changing its meaning.` : undefined;
   return { text: head + expanded, subset, problem };
 }
 
@@ -607,7 +605,10 @@ function editorGroup(svg: Svg, c: Cruft): FieldGroup {
     fields.push(
       rawField('svg:paths', 'File paths', [...new Set(paths.map(([, a]) => a.value.trim()))].join('; '), {
         sensitivity: 'identity',
-        tag: paths.map(([, a]) => a.name).filter((v, i, all) => all.indexOf(v) === i).join(', '),
+        tag: paths
+          .map(([, a]) => a.name)
+          .filter((v, i, all) => all.indexOf(v) === i)
+          .join(', '),
         description: c.links.length
           ? 'Absolute paths saved by the editor or in links to local files; they often contain the user name. Removing them keeps only the file names in links.'
           : 'Absolute paths saved by the editor; they often contain the user name.',
@@ -616,14 +617,29 @@ function editorGroup(svg: Svg, c: Cruft): FieldGroup {
   }
   if (c.names.length) {
     const names = [...new Set(c.names.map(([, a]) => a.value))];
-    fields.push(rawField('svg:names', 'Layer names', names.length > 8 ? `${names.slice(0, 8).join(', ')}, …` : names.join(', '), { sensitivity: 'content', tag: 'data-name' }));
+    fields.push(
+      rawField('svg:names', 'Layer names', names.length > 8 ? `${names.slice(0, 8).join(', ')}, …` : names.join(', '), {
+        sensitivity: 'content',
+        tag: 'data-name',
+      }),
+    );
   }
   if (c.comments) {
     const first = c.firstComment && c.firstComment.length > 120 ? `${c.firstComment.slice(0, 120)}…` : c.firstComment;
-    fields.push(rawField('svg:comments', c.comments > 1 ? `XML comments (${c.comments})` : 'XML comment', first || '(empty)', { sensitivity: 'software', tag: '<!-- -->' }));
+    fields.push(
+      rawField('svg:comments', c.comments > 1 ? `XML comments (${c.comments})` : 'XML comment', first || '(empty)', {
+        sensitivity: 'software',
+        tag: '<!-- -->',
+      }),
+    );
   }
   if (svg.subset) {
-    fields.push(rawField('svg:doctype', 'DOCTYPE declarations', `${svg.subset} entity declaration${svg.subset > 1 ? 's' : ''}`, { sensitivity: 'software', tag: '<!DOCTYPE [ … ]>' }));
+    fields.push(
+      rawField('svg:doctype', 'DOCTYPE declarations', `${svg.subset} entity declaration${svg.subset > 1 ? 's' : ''}`, {
+        sensitivity: 'software',
+        tag: '<!DOCTYPE [ … ]>',
+      }),
+    );
   }
   return { id: 'svg.editor', label: 'Editor data', source: 'SVG', fields };
 }
@@ -721,7 +737,10 @@ function decodePicture(uri: string): Picture | null {
   const head = s.slice(0, comma);
   const hash = s.indexOf('#', comma);
   const body = percentDecode(s.slice(comma + 1, hash < 0 ? s.length : hash));
-  const params = head.slice(5).split(';').map((x) => x.trim());
+  const params = head
+    .slice(5)
+    .split(';')
+    .map((x) => x.trim());
   const base64 = params.length > 1 && params[params.length - 1].toLowerCase() === 'base64';
   const pic = { head, base64, mime: (params[0] || 'text/plain').toLowerCase(), bytes: body, fragment: hash < 0 ? '' : s.slice(hash) };
   if (!base64) return pic;
@@ -754,7 +773,10 @@ async function inspectPicture(p: Picture, depth: number): Promise<EmbeddedInfo |
   const m = await readSvgAt(Source.fromBytes(p.bytes, 'embedded.svg'), depth + 1);
   if (!m.canStrip) throw new MetadataError(m.warnings[0] ?? 'it cannot be rewritten');
   if (m.groups.some((g) => g.id === 'svg.images' && g.fields.some((f) => !f.removable))) throw new MetadataError('a picture inside it cannot be checked');
-  return revealed(m.format.name, m.groups.flatMap((g) => g.fields.map((f) => f.sensitivity)));
+  return revealed(
+    m.format.name,
+    m.groups.flatMap((g) => g.fields.map((f) => f.sensitivity)),
+  );
 }
 
 /** The picture without its metadata, or null when there is nothing to change. Throws when it cannot be cleaned. */

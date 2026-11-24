@@ -13,7 +13,11 @@ const ids = (b: Uint8Array) => parseWebp(b).chunks.map((c) => c.id);
 const flags = (b: Uint8Array) => parseWebp(b).chunks.find((c) => c.id === 'VP8X')?.data[0];
 /** The image payload: every VP8/VP8L/ALPH/ANIM/ANMF chunk, in order. */
 const payload = (b: Uint8Array) =>
-  Buffer.concat(parseWebp(b).chunks.filter((c) => ['VP8 ', 'VP8L', 'ALPH', 'ANIM', 'ANMF'].includes(c.id)).map((c) => Buffer.from(c.data)));
+  Buffer.concat(
+    parseWebp(b)
+      .chunks.filter((c) => ['VP8 ', 'VP8L', 'ALPH', 'ANIM', 'ANMF'].includes(c.id))
+      .map((c) => Buffer.from(c.data)),
+  );
 const read = async (b: Uint8Array) => webpHandler.read(new Source(new Blob([b as BlobPart])));
 
 /** libwebp's own structural validator, when installed. */

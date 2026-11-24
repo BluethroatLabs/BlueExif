@@ -264,7 +264,12 @@ export function vorbisGroups(vc: VorbisComments | null, pictures: FlacPicture[],
     const base = { id, label, sensitivity: keySens(key), tag: cs[0].key };
     if (isPictureKey(key)) {
       const size = cs.reduce((n, c) => n + c.value.length, 0);
-      fields.push(rawField(id, key === 'COVERART' ? 'Cover art (legacy)' : 'Picture (undecodable)', `${cs.length} × base64, ${formatBytes(size)}`, { sensitivity: 'content', tag: key }));
+      fields.push(
+        rawField(id, key === 'COVERART' ? 'Cover art (legacy)' : 'Picture (undecodable)', `${cs.length} × base64, ${formatBytes(size)}`, {
+          sensitivity: 'content',
+          tag: key,
+        }),
+      );
       continue;
     }
     const vals = cs.map((c) => c.value);
@@ -289,7 +294,13 @@ export function vorbisGroups(vc: VorbisComments | null, pictures: FlacPicture[],
   if (opts.addable) {
     for (const [key, def] of Object.entries(KEYS)) {
       if (!def.addable || byKey.has(key)) continue;
-      addable.push({ id: `vorbis:${key}`, label: def.label, kind: def.date ? 'datetime' : def.multiline ? 'multiline' : 'text', sensitivity: def.sens, tag: key });
+      addable.push({
+        id: `vorbis:${key}`,
+        label: def.label,
+        kind: def.date ? 'datetime' : def.multiline ? 'multiline' : 'text',
+        sensitivity: def.sens,
+        tag: key,
+      });
     }
   }
   if (fields.length || addable.length) {
@@ -304,7 +315,13 @@ export function vorbisGroups(vc: VorbisComments | null, pictures: FlacPicture[],
       }
       const typeName = PICTURE_TYPES[p.type] ?? `Type ${p.type}`;
       return makeField(
-        { id: `vorbis:picture:${i}`, label: p.description ? `${typeName} — ${p.description}` : typeName, kind: 'image', sensitivity: 'content', tag: 'PICTURE' },
+        {
+          id: `vorbis:picture:${i}`,
+          label: p.description ? `${typeName} — ${p.description}` : typeName,
+          kind: 'image',
+          sensitivity: 'content',
+          tag: 'PICTURE',
+        },
         v,
         { display: describeImage(v) },
       );

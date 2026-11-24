@@ -129,8 +129,7 @@ const META: MetaDef[] = [
 
 const metaId = (prefix: string, local: string) => `odf:${prefix}:${local}`;
 const nsFor = (prefix: 'meta' | 'dc') => (prefix === 'meta' ? NS.meta : NS.dc);
-const defOf = (el: XElement) =>
-  META.find((d) => localName(el.name) === d.local && nsOf(el) === nsFor(d.prefix));
+const defOf = (el: XElement) => META.find((d) => localName(el.name) === d.local && nsOf(el) === nsFor(d.prefix));
 
 const DURATION_RE = /^-?P(?=\d|T\d)(?:(\d+)Y)?(?:(\d+)M)?(?:(\d+)D)?(?:T(?=\d)(?:(\d+)H)?(?:(\d+)M)?(?:(\d+(?:\.\d+)?)S)?)?$/;
 
@@ -261,7 +260,9 @@ function metaGroup(meta: XElement | null, info: InfoItem[]): { main: FieldGroup;
     } else if (isNamed(el, NS.meta, 'document-statistic')) {
       for (const a of el.attrs) {
         if (attrNs(el, a) !== NS.meta) continue;
-        const label = localName(a.name).replace(/-count$/, '').replace(/-/g, ' ');
+        const label = localName(a.name)
+          .replace(/-count$/, '')
+          .replace(/-/g, ' ');
         info.push({ label: `${label[0].toUpperCase()}${label.slice(1)}s`, value: a.value });
       }
     }
@@ -304,7 +305,17 @@ function userField(el: XElement): Field {
   const spec: FieldSpec = { id: `odf:user:${name}`, label: name, kind: 'text', sensitivity: userSensitivity(name), tag: `meta:user-defined (${type})` };
   if ((type === 'float' || type === 'percentage') && Number.isFinite(Number(text))) return makeField({ ...spec, kind: 'number' }, Number(text));
   if (type === 'boolean') {
-    return makeField({ ...spec, kind: 'enum', options: [{ value: 'true', label: 'Yes' }, { value: 'false', label: 'No' }] }, text.trim() === 'true' ? 'true' : 'false');
+    return makeField(
+      {
+        ...spec,
+        kind: 'enum',
+        options: [
+          { value: 'true', label: 'Yes' },
+          { value: 'false', label: 'No' },
+        ],
+      },
+      text.trim() === 'true' ? 'true' : 'false',
+    );
   }
   if (type === 'date') {
     const p = parseDate(text.trim());
@@ -344,7 +355,10 @@ async function applyMetaEdits(o: Odf, edits: Edits): Promise<void> {
   const clearMain = edits.get(groupKey('odf.meta'))?.op === 'remove';
   const clearUser = edits.get(groupKey('odf.user'))?.op === 'remove';
   if (!mine.length && !clearMain && !clearUser) return;
-  const meta = await metaElement(o, mine.some(([, e]) => e.op === 'set'));
+  const meta = await metaElement(
+    o,
+    mine.some(([, e]) => e.op === 'set'),
+  );
   if (!meta) return;
   const root = (await o.parts.get(META_PART))!.root;
   if (clearMain) for (const el of elements(meta)) if (defOf(el) || is(el, NS.meta, 'template')) removeNode(el);
@@ -527,7 +541,13 @@ function hiddenFields(scan: HiddenScan): Field[] {
     );
   }
   if (scan.printer) {
-    fields.push(rawField('odf:hidden:printer', 'Printer', scan.printer, { sensitivity: 'device', tag: 'settings.xml PrinterName', description: 'The printer last used, with its driver settings.' }));
+    fields.push(
+      rawField('odf:hidden:printer', 'Printer', scan.printer, {
+        sensitivity: 'device',
+        tag: 'settings.xml PrinterName',
+        description: 'The printer last used, with its driver settings.',
+      }),
+    );
   }
   return fields;
 }
@@ -686,7 +706,12 @@ export async function readOdf(src: Source): Promise<Metadata> {
   const other: Field[] = [...extra];
   if (o.parts.has(THUMB)) {
     const img = imageValue(await o.zip.read(o.parts.entry(THUMB)!));
-    other.push(makeField({ id: 'odf:thumbnail', label: 'Thumbnail', kind: 'image', sensitivity: 'content', tag: THUMB }, img, { editable: false, display: describeImage(img) }));
+    other.push(
+      makeField({ id: 'odf:thumbnail', label: 'Thumbnail', kind: 'image', sensitivity: 'content', tag: THUMB }, img, {
+        editable: false,
+        display: describeImage(img),
+      }),
+    );
   }
   other.push(...hiddenFields(await processHidden(o, new Set())));
   const versions = await versionsField(o);
@@ -695,7 +720,9 @@ export async function readOdf(src: Source): Promise<Metadata> {
   if (objects) other.push(objects);
   const signed = SIGNATURES.filter((s) => o.parts.has(s));
   if (signed.length) {
-    other.push(rawField('odf:signature', 'Digital signature', 'Signer certificate (invalidated by any change)', { sensitivity: 'identity', tag: signed.join(', ') }));
+    other.push(
+      rawField('odf:signature', 'Digital signature', 'Signer certificate (invalidated by any change)', { sensitivity: 'identity', tag: signed.join(', ') }),
+    );
     warnings.push('This document is digitally signed. Any change invalidates the signature.');
   }
   if (other.length) groups.push({ id: 'odf.other', label: 'Embedded data', source: 'ODF', fields: other });

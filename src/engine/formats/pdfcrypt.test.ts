@@ -121,11 +121,15 @@ function withFile<T>(bytes: Uint8Array, fn: (path: string) => T): T {
 /** Ghostscript's text extraction (it decrypts with `password`). */
 function gsText(bytes: Uint8Array, password?: string): string {
   return withFile(bytes, (p) =>
-    execFileSync('gs', ['-q', '-dNOPAUSE', '-dBATCH', '-dSAFER', '-sDEVICE=txtwrite', ...(password ? [`-sPDFPassword=${password}`] : []), '-sOutputFile=-', p], {
-      encoding: 'utf8',
-      timeout: 60_000,
-      stdio: ['ignore', 'pipe', 'pipe'],
-    }),
+    execFileSync(
+      'gs',
+      ['-q', '-dNOPAUSE', '-dBATCH', '-dSAFER', '-sDEVICE=txtwrite', ...(password ? [`-sPDFPassword=${password}`] : []), '-sOutputFile=-', p],
+      {
+        encoding: 'utf8',
+        timeout: 60_000,
+        stdio: ['ignore', 'pipe', 'pipe'],
+      },
+    ),
   );
 }
 
@@ -227,7 +231,12 @@ describe('encrypted PDFs', () => {
     expect(manifest.some((f) => !f.user)).toBe(true);
     expect(manifest.some((f) => f.objectStreams)).toBe(true);
     expect(manifest.some((f) => f.identityStream)).toBe(true);
-    expect(manifest.map((f) => f.passwordEncoding).filter(Boolean).sort()).toEqual(['PDFDocEncoding', 'UTF-8']);
+    expect(
+      manifest
+        .map((f) => f.passwordEncoding)
+        .filter(Boolean)
+        .sort(),
+    ).toEqual(['PDFDocEncoding', 'UTF-8']);
     expect(manifest.some((f) => f.cipher === 'AES-256' && /[^\x20-\x7e]/.test(f.user))).toBe(true);
   });
 

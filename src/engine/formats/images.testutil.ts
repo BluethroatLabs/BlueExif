@@ -40,7 +40,18 @@ export function decodeErrors(bytes: Uint8Array, ext: string): string {
 
 /** Number of decoded video frames according to ffprobe. */
 export function frameCount(bytes: Uint8Array, ext: string): number {
-  const r = runOn(bytes, ext, 'ffprobe', (f) => ['-v', 'error', '-count_frames', '-select_streams', 'v:0', '-show_entries', 'stream=nb_read_frames', '-of', 'csv=p=0', f]);
+  const r = runOn(bytes, ext, 'ffprobe', (f) => [
+    '-v',
+    'error',
+    '-count_frames',
+    '-select_streams',
+    'v:0',
+    '-show_entries',
+    'stream=nb_read_frames',
+    '-of',
+    'csv=p=0',
+    f,
+  ]);
   return parseInt(r.out.trim(), 10);
 }
 

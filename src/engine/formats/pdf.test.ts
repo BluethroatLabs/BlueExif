@@ -1,5 +1,18 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import { PDFArray, PDFDict, PDFDocument, PDFHexString, PDFName, PDFRawStream, PDFRef, PDFString, StandardFonts, decodePDFRawStream, type PDFObject, type PDFPage } from 'pdf-lib';
+import {
+  PDFArray,
+  PDFDict,
+  PDFDocument,
+  PDFHexString,
+  PDFName,
+  PDFRawStream,
+  PDFRef,
+  PDFString,
+  StandardFonts,
+  decodePDFRawStream,
+  type PDFObject,
+  type PDFPage,
+} from 'pdf-lib';
 import { Source, groupKey, type DetectContext, type Metadata } from '../core/types';
 import { REMOVE, allFields, bytesOf, edits, etMetaKeys, etProblems, exiftool, field, fixture, fixtureBytes, strip } from '../test/helpers';
 import { HAS_QLMANAGE, HAS_SWIFT, pdfKitPages, preparePdfKit, qlRender } from '../test/docOracles';
@@ -211,12 +224,11 @@ describe('pdf', () => {
     expect(all).toContain('Meeting notes: totals look fine.');
 
     const m = await read(bytes);
-    expect(allFields(m).map((f) => f.id).sort()).toEqual([
-      'pdfdoc:attachments',
-      'pdfdoc:id',
-      'xmp:http://www.aiim.org/pdfa/ns/id/|conformance',
-      'xmp:http://www.aiim.org/pdfa/ns/id/|part',
-    ]);
+    expect(
+      allFields(m)
+        .map((f) => f.id)
+        .sort(),
+    ).toEqual(['pdfdoc:attachments', 'pdfdoc:id', 'xmp:http://www.aiim.org/pdfa/ns/id/|conformance', 'xmp:http://www.aiim.org/pdfa/ns/id/|part']);
     expect(m.info.find((i) => i.label === 'Pages')?.value).toBe('2');
     if (HAS_SWIFT) expect(pdfKitPages(bytes)).toBe(2);
     // QuickLook renders the first page identically
@@ -266,7 +278,16 @@ const SIGNER_CERT = cert('2a', CA, SIGNER);
 /** PKCS#7 SignedData: the CA certificate comes first, the SignerInfo names the signer's by serial number. */
 const PKCS7 = seq(
   oid('2a864886f70d010702'),
-  tlv(0xa0, seq(int('01'), set(SHA256), seq(oid('2a864886f70d010701')), tlv(0xa0, cert('01', CA, CA), SIGNER_CERT), set(seq(int('01'), seq(CA, int('2a')), SHA256, RSA_SHA256, tlv(0x04, Buffer.from('sig')))))),
+  tlv(
+    0xa0,
+    seq(
+      int('01'),
+      set(SHA256),
+      seq(oid('2a864886f70d010701')),
+      tlv(0xa0, cert('01', CA, CA), SIGNER_CERT),
+      set(seq(int('01'), seq(CA, int('2a')), SHA256, RSA_SHA256, tlv(0x04, Buffer.from('sig')))),
+    ),
+  ),
 );
 
 /**
@@ -283,7 +304,7 @@ async function activePdf(): Promise<Uint8Array> {
   const p2 = doc.addPage([400, 400]);
   p1.drawText('Signed contract', { x: 20, y: 350, size: 18, font });
   p2.drawText('Second page', { x: 20, y: 350, size: 18, font });
-  const fit = (p: PDFPage) => ctx.obj([p.ref, 'Fit']);
+  const fitDest = (p: PDFPage) => ctx.obj([p.ref, 'Fit']);
   const js = (code: string, extra: Record<string, PDFObject> = {}) => ctx.obj({ S: 'JavaScript', JS: PDFString.of(code), ...extra });
 
   const form = doc.getForm();
@@ -350,15 +371,18 @@ async function activePdf(): Promise<Uint8Array> {
     annot('file-uri', { A: ctx.obj({ S: 'URI', URI: PDFString.of('file:///home/alice/notes.txt') }) }),
     annot('script', { A: js(`app.launchURL("https://tracker.example/${MARK}")`) }),
     annot('web', { A: ctx.obj({ S: 'URI', URI: PDFString.of('https://example.com/terms') }) }),
-    annot('internal', { A: ctx.obj({ S: 'GoTo', D: fit(p2) }) }),
+    annot('internal', { A: ctx.obj({ S: 'GoTo', D: fitDest(p2) }) }),
     annot('square', { Subtype: PDFName.of('Square'), AF: ctx.obj([embedded('annot-note.txt', 'annotation file\n')]) }),
   ];
   p1.node.set(PDFName.of('Annots'), ctx.obj(annots));
   p1.node.set(PDFName.of('AA'), ctx.obj({ O: js(`console.println("${MARK}")`), C: { S: 'URI', URI: PDFString.of('https://tracker.example/close') } }));
 
   const util = ctx.register(ctx.obj({ S: 'JavaScript', JS: ctx.register(ctx.flateStream(`function owner() { return "${MARK}"; }`)) }));
-  doc.catalog.set(PDFName.of('Names'), ctx.obj({ JavaScript: { Names: [PDFString.of('init'), ctx.register(js(`var who = "${MARK}";`)), PDFString.of('util'), util] } }));
-  doc.catalog.set(PDFName.of('OpenAction'), js(`app.alert("${MARK}")`, { Next: ctx.obj({ S: 'GoTo', D: fit(p2) }) }));
+  doc.catalog.set(
+    PDFName.of('Names'),
+    ctx.obj({ JavaScript: { Names: [PDFString.of('init'), ctx.register(js(`var who = "${MARK}";`)), PDFString.of('util'), util] } }),
+  );
+  doc.catalog.set(PDFName.of('OpenAction'), js(`app.alert("${MARK}")`, { Next: ctx.obj({ S: 'GoTo', D: fitDest(p2) }) }));
   doc.catalog.set(PDFName.of('AA'), ctx.obj({ WC: js(`app.alert("bye ${MARK}")`) }));
   return doc.save({ useObjectStreams: false, addDefaultPage: false, updateFieldAppearances: true });
 }
@@ -489,7 +513,11 @@ describe('pdf active content', () => {
     expect(all).not.toContain('D:20240601120000Z');
 
     const m = await read(out);
-    expect(allFields(m).map((f) => f.id).sort()).toEqual(['pdfdoc:attachments', 'pdfdoc:id']);
+    expect(
+      allFields(m)
+        .map((f) => f.id)
+        .sort(),
+    ).toEqual(['pdfdoc:attachments', 'pdfdoc:id']);
     expect(m.warnings).toEqual([]);
     expect(m.info.find((i) => i.label === 'Form fields')?.value).toBe('2');
     if (HAS_SWIFT) expect(pdfKitPages(out)).toBe(2);
@@ -562,7 +590,9 @@ describe('pdf active content', () => {
     const doc = await PDFDocument.create({ updateMetadata: false });
     const ctx = doc.context;
     const page = doc.addPage([200, 200]);
-    const sig = ctx.register(ctx.obj({ Type: 'Sig', SubFilter: 'adbe.pkcs7.detached', Contents: PDFHexString.of(PKCS7.toString('hex')), Name: PDFString.of(`Bob ${MARK}`) }));
+    const sig = ctx.register(
+      ctx.obj({ Type: 'Sig', SubFilter: 'adbe.pkcs7.detached', Contents: PDFHexString.of(PKCS7.toString('hex')), Name: PDFString.of(`Bob ${MARK}`) }),
+    );
     // the value sits on a parent field that no /AcroForm lists; only its widget is on the page
     const parent = ctx.register(ctx.obj({ FT: 'Sig', T: PDFString.of('Hidden'), V: sig }));
     const kid = ctx.register(ctx.obj({ Type: 'Annot', Subtype: 'Widget', Parent: parent, Rect: [0, 0, 10, 10], P: page.ref }));

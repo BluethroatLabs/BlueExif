@@ -143,7 +143,12 @@ describe('tiff', () => {
   it('keeps further pages when editing a multi-page TIFF', async () => {
     const src = fixtureBytes('images/multipage.tif');
     const m = await tiffHandler.read(fixture('images/multipage.tif'));
-    expect(m.info).toEqual(expect.arrayContaining([{ label: 'Pages', value: '2' }, { label: 'Dimensions', value: '8 × 8' }]));
+    expect(m.info).toEqual(
+      expect.arrayContaining([
+        { label: 'Pages', value: '2' },
+        { label: 'Dimensions', value: '8 × 8' },
+      ]),
+    );
     expect(field(m, ARTIST)?.value).toBe('Page One Artist');
 
     const out = await bytesOf(await tiffHandler.write!(fixture('images/multipage.tif'), edits({ [ARTIST]: REMOVE, 'exif:ifd0:0131': 'Edited' })));
@@ -280,7 +285,9 @@ function withThumbnail(src: Uint8Array, jpeg: Uint8Array, page = 0, compression?
     return new Uint8Array(e.buffer);
   };
   const tagOf = (e: Uint8Array) => new DataView(e.buffer, e.byteOffset).getUint16(0, le);
-  const entries = Array.from({ length: n }, (_, i) => src.slice(off + 2 + i * 12, off + 14 + i * 12)).filter((e) => compression === undefined || tagOf(e) !== 0x0103);
+  const entries = Array.from({ length: n }, (_, i) => src.slice(off + 2 + i * 12, off + 14 + i * 12)).filter(
+    (e) => compression === undefined || tagOf(e) !== 0x0103,
+  );
   entries.push(entry(0x0201, 4, thumbAt), entry(0x0202, 4, jpeg.length));
   if (compression !== undefined) entries.push(entry(0x0103, 3, compression));
   entries.sort((a, b) => tagOf(a) - tagOf(b));
@@ -381,7 +388,11 @@ describe('tiff: hostile directories', () => {
     const MB = 1 << 20;
     const body = new Uint8Array(MB + 2 + 5000 * 12 + 4);
     const v = new DataView(body.buffer);
-    dir(v, MB, Array.from({ length: 5000 }, (_, i): [number, number, number, number] => [0xc000 + i, 7, MB, 8]));
+    dir(
+      v,
+      MB,
+      Array.from({ length: 5000 }, (_, i): [number, number, number, number] => [0xc000 + i, 7, MB, 8]),
+    );
     const file = tiff(body, 8 + MB); // the directory sits right after the region
     const m = await tiffHandler.read(Source.fromBytes(file, 'many.tif'));
     expect(m.format.id).toBe('tiff');
@@ -394,7 +405,12 @@ describe('tiff: hostile directories', () => {
     const body = new Uint8Array(pages * size);
     const v = new DataView(body.buffer);
     for (let k = 0; k < pages; k++) {
-      dir(v, k * size, Array.from({ length: per }, (): [number, number, number, number] => [0x0100, 3, 1, 16]), k + 1 < pages ? 8 + (k + 1) * size : 0);
+      dir(
+        v,
+        k * size,
+        Array.from({ length: per }, (): [number, number, number, number] => [0x0100, 3, 1, 16]),
+        k + 1 < pages ? 8 + (k + 1) * size : 0,
+      );
     }
     await expect(tiffHandler.read(Source.fromBytes(tiff(body, 8), 'pages.tif'))).rejects.toThrow(/more directory entries than can be processed/);
   });

@@ -156,10 +156,26 @@ touched). It needs Contributor on both resource groups. `SUBSCRIPTION`, `RG`,
 defaults. On first deploy it prints the CNAME and `_dnsauth` TXT records the
 custom domain needs before Front Door can issue its certificate.
 
-GitHub Actions (`.github/workflows/ci.yml`) typechecks, runs the tests, builds,
-and uploads from `main` over OIDC with `DEPLOY_FRONT_DOOR=false`: the CI
-identity has Contributor on BlueMask's group only, never on the shared Front
-Door group, so Front Door changes go out with `just deploy`.
-`./infra/setup-github-oidc.sh` creates the Entra app, its federated credential
-and that role, and sets the `AZURE_CLIENT_ID`, `AZURE_TENANT_ID` and
-`AZURE_SUBSCRIPTION_ID` repository secrets.
+GitHub Actions runs three jobs on every push to `main` and every pull request
+(`.github/workflows/ci.yml`): lint (`npm run lint`, typecheck), format
+(`npm run format:check`; `npm run format` fixes) and test (`npm test`, then the
+single-file build). Lint and format are [Biome](https://biomejs.dev), configured
+in `biome.json`.
+
+Pushing a `v*` tag deploys that commit (`.github/workflows/deploy.yml`):
+
+```bash
+git tag v0.1.0 && git push origin v0.1.0
+```
+
+The tag must point at a commit on `main`. The workflow re-runs the CI jobs, then
+uploads over OIDC from the `production` environment with
+`DEPLOY_FRONT_DOOR=false`. The CI identity (`github-blueexif`) can run
+deployments in BlueMask's group and has Contributor on BlueExif's storage
+account only, with no role on BlueMask's storage or the shared Front Door group,
+so Front Door changes go out with `just deploy`. The `production` environment
+needs a reviewer's approval for each deploy. `./infra/setup-github-oidc.sh`
+records that setup (Entra app, federated credential trusting only that
+environment, the two roles, the `v*` tag rule, and the `AZURE_CLIENT_ID`,
+`AZURE_TENANT_ID` and `AZURE_SUBSCRIPTION_ID` repository secrets); it is already
+in place, so there is no need to run it.

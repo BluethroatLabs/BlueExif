@@ -14,7 +14,11 @@ export function iccDescription(icc: Uint8Array): string | null {
       const type = latin1(icc.subarray(off, off + 4));
       if (type === 'desc') {
         const len = r.u32(off + 8);
-        return latin1(icc.subarray(off + 12, off + 12 + len)).replace(/\0+$/, '').trim() || null;
+        return (
+          latin1(icc.subarray(off + 12, off + 12 + len))
+            .replace(/\0+$/, '')
+            .trim() || null
+        );
       }
       if (type === 'mluc') {
         const count = r.u32(off + 8);
@@ -31,7 +35,11 @@ export function iccDescription(icc: Uint8Array): string | null {
         }
         const len = r.u32(rec + 4);
         const o = r.u32(rec + 8);
-        return utf16(icc.subarray(off + o, off + o + len), false).replace(/\0+$/, '').trim() || null;
+        return (
+          utf16(icc.subarray(off + o, off + o + len), false)
+            .replace(/\0+$/, '')
+            .trim() || null
+        );
       }
     }
   } catch {

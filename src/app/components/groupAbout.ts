@@ -357,7 +357,9 @@ const RIFF_INFO: AboutText = {
 
 const SECTIONS: Record<string, AboutText> = {
   // IPTC
-  iptc: { what: 'Caption, headline, keywords, byline (photographer), credit, copyright, and where the photo was taken — the fields news agencies use to describe a photo.' },
+  iptc: {
+    what: 'Caption, headline, keywords, byline (photographer), credit, copyright, and where the photo was taken — the fields news agencies use to describe a photo.',
+  },
   // Images
   'jpeg.comments': COMMENTS,
   'gif.comments': COMMENTS,
@@ -478,8 +480,9 @@ export function aboutGroup(g: FieldGroup): GroupAbout {
     return { ...(EXIF_SECTIONS[key] ?? EXIF_SECTIONS.other), standard };
   }
 
-  const section =
-    SECTIONS[g.id] ?? (g.id.startsWith('mkv.tags.') ? MKV_TAGS : undefined) ?? BY_LABEL[g.label] ?? {
+  const section = SECTIONS[g.id] ??
+    (g.id.startsWith('mkv.tags.') ? MKV_TAGS : undefined) ??
+    BY_LABEL[g.label] ?? {
       what: standard ? `Metadata stored in the file’s ${standard.name} data.` : 'Metadata stored in this file.',
     };
   return { ...section, standard };

@@ -203,7 +203,13 @@ export function iptcGroups(d: IptcData, opts: { prefix?: string; addable?: boole
       fields.push(makeField({ ...spec, kind: 'text' }, dec(x.data), { editable: false }));
       continue;
     }
-    if (def.rep) fields.push(makeField(spec, all.map((y) => dec(y.data))));
+    if (def.rep)
+      fields.push(
+        makeField(
+          spec,
+          all.map((y) => dec(y.data)),
+        ),
+      );
     else fields.push(makeField(spec, dec(x.data)));
   }
   const addable: FieldSpec[] = [];

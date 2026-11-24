@@ -75,9 +75,7 @@ describe('svg', () => {
     expect(field(m, rdf(CC, 'license'))?.value).toBe('http://creativecommons.org/licenses/by-sa/4.0/');
     expect(field(m, rdf(DC, 'format'))).toBeUndefined();
     expect(field(m, 'svg:rdf:other')?.display).toBe('License: permits Reproduction, permits Distribution, requires Notice');
-    expect(field(m, 'svg:editor:inkscape')?.display).toBe(
-      `Inkscape 1.3.2 (091e20e, 2023-11-25, custom), file “logo-${MARK}.svg”, 2 elements, 13 attributes`,
-    );
+    expect(field(m, 'svg:editor:inkscape')?.display).toBe(`Inkscape 1.3.2 (091e20e, 2023-11-25, custom), file “logo-${MARK}.svg”, 2 elements, 13 attributes`);
     expect(field(m, 'svg:paths')?.display).toBe(`/home/${MARK}/Pictures/logo.png`);
     expect(field(m, 'svg:comments')?.display).toBe('Created with Inkscape (http://www.inkscape.org/)');
     expect(m.warnings).toEqual([]);
@@ -152,7 +150,9 @@ describe('svg', () => {
     expect(et['SVG:Desc']).toBe('A green square');
     expect(et['XMP-cc:WorkCreatorAgentTitle']).toBe('Max');
     expect(et['XMP-cc:WorkSubject']).toBe('shape');
-    expect(text(bytes)).toMatch(/^<\?xml version="1.0" encoding="UTF-8"\?>\n<svg[^>]*>\n {2}<title>Square<\/title>\n {2}<desc>A green square<\/desc>\n {2}<metadata>/);
+    expect(text(bytes)).toMatch(
+      /^<\?xml version="1.0" encoding="UTF-8"\?>\n<svg[^>]*>\n {2}<title>Square<\/title>\n {2}<desc>A green square<\/desc>\n {2}<metadata>/,
+    );
     sameRender(fixtureBytes('documents/plain.svg'), bytes);
 
     const removed = await svgHandler.write!(Source.fromBytes(bytes), edits({ [groupKey('svg.rdf')]: REMOVE }));
@@ -207,7 +207,9 @@ describe('svg', () => {
 
   it('refuses to rewrite files whose entities cannot be preserved', async () => {
     const enc = new TextEncoder();
-    const markup = enc.encode(`<?xml version="1.0"?>\n<!DOCTYPE svg [<!ENTITY box "<rect width='1' height='1'/>">]>\n<svg xmlns="http://www.w3.org/2000/svg"><title>x</title>&box;</svg>`);
+    const markup = enc.encode(
+      `<?xml version="1.0"?>\n<!DOCTYPE svg [<!ENTITY box "<rect width='1' height='1'/>">]>\n<svg xmlns="http://www.w3.org/2000/svg"><title>x</title>&box;</svg>`,
+    );
     const m = await read(markup);
     expect(m.canWrite).toBe(false);
     expect(m.warnings[0]).toMatch(/entity &box; containing markup/);
@@ -241,7 +243,10 @@ const unb64 = (s: string) => new Uint8Array(Buffer.from(s, 'base64'));
 
 /** The data: URIs of an SVG, in document order. */
 function dataUris(svg: string): Array<{ head: string; bytes: Uint8Array }> {
-  return [...svg.matchAll(/(?:xlink:)?href="(data:[^,"]*),([^"#]*)"/g)].map((m) => ({ head: m[1], bytes: m[1].endsWith(';base64') ? unb64(m[2]) : new TextEncoder().encode(decodeURIComponent(m[2])) }));
+  return [...svg.matchAll(/(?:xlink:)?href="(data:[^,"]*),([^"#]*)"/g)].map((m) => ({
+    head: m[1],
+    bytes: m[1].endsWith(';base64') ? unb64(m[2]) : new TextEncoder().encode(decodeURIComponent(m[2])),
+  }));
 }
 
 const svgDoc = (body: string) =>
@@ -268,7 +273,9 @@ describe('svg: embedded pictures and linked files', () => {
     '  <a href="/about/team.html"><rect x="50" y="120" width="10" height="10" fill="blue"/></a>',
   ];
   const doc = svgDoc(
-    [photo, `  <image id="badge" x="160" y="0" width="32" height="24" href="data:image/png;base64,${b64(png).replace(/(.{76})/g, '$1\n')}"/>`, ...links].join('\n'),
+    [photo, `  <image id="badge" x="160" y="0" width="32" height="24" href="data:image/png;base64,${b64(png).replace(/(.{76})/g, '$1\n')}"/>`, ...links].join(
+      '\n',
+    ),
   );
 
   it('lists what embedded pictures reveal and the local files that are linked', async () => {
@@ -281,7 +288,8 @@ describe('svg: embedded pictures and linked files', () => {
     expect(field(m, 'svg:image:1')).toMatchObject({ label: 'PNG image', tag: 'href' });
     expect(field(m, 'svg:paths')).toMatchObject({
       sensitivity: 'identity',
-      display: 'file:///Users/alice/Pictures/holiday%20photo.jpg; C:\\Users\\alice\\Desktop\\scan.png; \\\\fileserver\\alice\\report.pdf; /home/alice/icons.svg#star',
+      display:
+        'file:///Users/alice/Pictures/holiday%20photo.jpg; C:\\Users\\alice\\Desktop\\scan.png; \\\\fileserver\\alice\\report.pdf; /home/alice/icons.svg#star',
       tag: 'href, xlink:href',
     });
     expect(m.warnings).toEqual([]);
@@ -327,7 +335,9 @@ describe('svg: embedded pictures and linked files', () => {
     const m = await read(new TextEncoder().encode(one));
     expect(m.groups.find((g) => g.id === 'svg.images')?.fields.map((f) => f.id)).toEqual(['svg:image:1']);
 
-    const all = text(await bytesOf(await svgHandler.write!(Source.fromBytes(doc, 'pic.svg'), edits({ [groupKey('svg.images')]: REMOVE, 'svg:paths': REMOVE }))));
+    const all = text(
+      await bytesOf(await svgHandler.write!(Source.fromBytes(doc, 'pic.svg'), edits({ [groupKey('svg.images')]: REMOVE, 'svg:paths': REMOVE }))),
+    );
     expect(all).not.toContain('alice');
     expect(allFields(await read(new TextEncoder().encode(all)))).toEqual([]);
   });
@@ -352,15 +362,23 @@ describe('svg: embedded pictures and linked files', () => {
   });
 
   it('refuses to strip when an embedded picture cannot be cleaned, naming it', async () => {
-    const broken = svgDoc(`  <image id="broken" width="5" height="5" href="data:image/jpeg;base64,${b64(new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0x40, 0x00, 1, 2]))}"/>`);
-    await expect(svgHandler.strip!(Source.fromBytes(broken, 'b.svg'), strip())).rejects.toThrow(/picture embedded in <image id="broken"> \(image\/jpeg\) cannot be cleaned/);
+    const broken = svgDoc(
+      `  <image id="broken" width="5" height="5" href="data:image/jpeg;base64,${b64(new Uint8Array([0xff, 0xd8, 0xff, 0xe1, 0x40, 0x00, 1, 2]))}"/>`,
+    );
+    await expect(svgHandler.strip!(Source.fromBytes(broken, 'b.svg'), strip())).rejects.toThrow(
+      /picture embedded in <image id="broken"> \(image\/jpeg\) cannot be cleaned/,
+    );
 
     // SVG pictures nested deeper than BlueExif follows them
     let nested = '<svg xmlns="http://www.w3.org/2000/svg"><title>deep</title></svg>';
-    for (let i = 0; i < 6; i++) nested = `<svg xmlns="http://www.w3.org/2000/svg"><image href="data:image/svg+xml;base64,${b64(new TextEncoder().encode(nested))}"/></svg>`;
+    for (let i = 0; i < 6; i++)
+      nested = `<svg xmlns="http://www.w3.org/2000/svg"><image href="data:image/svg+xml;base64,${b64(new TextEncoder().encode(nested))}"/></svg>`;
     const m = await read(new TextEncoder().encode(nested));
     expect(m.warnings).toEqual(['1 embedded picture cannot be cleaned; stripping this file will fail.']);
-    expect(field(m, 'svg:image:0')).toMatchObject({ removable: false, description: 'BlueExif cannot clean this picture: a picture inside it cannot be checked. Its metadata stays in saved copies.' });
+    expect(field(m, 'svg:image:0')).toMatchObject({
+      removable: false,
+      description: 'BlueExif cannot clean this picture: a picture inside it cannot be checked. Its metadata stays in saved copies.',
+    });
     await expect(svgHandler.strip!(Source.fromBytes(new TextEncoder().encode(nested), 'd.svg'), strip())).rejects.toThrow(/nested too deeply/);
 
     // an SVG picture whose entities cannot be preserved
@@ -368,6 +386,8 @@ describe('svg: embedded pictures and linked files', () => {
     const withMarkup = svgDoc(`  <image id="ent" href="data:image/svg+xml;base64,${b64(new TextEncoder().encode(markup))}"/>`);
     const e = await read(withMarkup);
     expect(field(e, 'svg:image:0')?.description).toMatch(/^BlueExif cannot clean this picture: This SVG uses entity &box; containing markup/);
-    await expect(svgHandler.strip!(Source.fromBytes(withMarkup, 'e.svg'), strip())).rejects.toThrow(/<image id="ent"> \(image\/svg\+xml\) cannot be cleaned: This SVG uses entity &box;/);
+    await expect(svgHandler.strip!(Source.fromBytes(withMarkup, 'e.svg'), strip())).rejects.toThrow(
+      /<image id="ent"> \(image\/svg\+xml\) cannot be cleaned: This SVG uses entity &box;/,
+    );
   });
 });

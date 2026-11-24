@@ -4,17 +4,7 @@
  * (kept verbatim). Serializes a clean single-Description packet.
  */
 
-import {
-  asInteger,
-  asList,
-  asText,
-  displayDate,
-  makeField,
-  parseDate,
-  rawField,
-  requireDate,
-  toIso,
-} from '../core/fields';
+import { asInteger, asList, asText, displayDate, makeField, parseDate, rawField, requireDate, toIso } from '../core/fields';
 import type { Edits, Field, FieldGroup, FieldKind, FieldSpec, Sensitivity } from '../core/types';
 import { MetadataError } from '../core/types';
 import {
@@ -276,9 +266,7 @@ function propFromElement(el: XElement): XmpProp | null {
     return { ...base, kind: 'complex', xml: serializeDetached(el) };
   }
   // Property attributes other than rdf:/xml:/xmlns make it a struct (shorthand)
-  const qualAttrs = el.attrs.filter(
-    (a) => !a.name.startsWith('xmlns') && a.name !== 'xml:lang' && attrNs(el, a) !== RDF,
-  );
+  const qualAttrs = el.attrs.filter((a) => !a.name.startsWith('xmlns') && a.name !== 'xml:lang' && attrNs(el, a) !== RDF);
   if (!kids.length) {
     if (qualAttrs.length) return { ...base, kind: 'complex', xml: serializeDetached(el) };
     return { ...base, kind: 'simple', value: textContent(el) };
@@ -379,9 +367,7 @@ export function serializeXmp(p: XmpPacket, opts: SerializeOptions = {}): string 
     if (prop.kind === 'simple') {
       body.push(`${ind}${ind}<${q}>${t(prop.value ?? '')}</${q}>`);
     } else if (prop.kind === 'alt') {
-      const lis = (prop.alt ?? []).map(
-        (a) => `${ind}${ind}${ind}${ind}<rdf:li xml:lang="${escapeAttr(a.lang)}">${t(a.value)}</rdf:li>`,
-      );
+      const lis = (prop.alt ?? []).map((a) => `${ind}${ind}${ind}${ind}<rdf:li xml:lang="${escapeAttr(a.lang)}">${t(a.value)}</rdf:li>`);
       body.push(`${ind}${ind}<${q}>\n${ind}${ind}${ind}<rdf:Alt>\n${lis.join('\n')}\n${ind}${ind}${ind}</rdf:Alt>\n${ind}${ind}</${q}>`);
     } else {
       const tag = prop.kind === 'bag' ? 'rdf:Bag' : 'rdf:Seq';
@@ -471,9 +457,7 @@ function propField(prefix: string, prop: XmpProp): Field {
       const alt = prop.alt ?? [];
       const def = alt.find((a) => a.lang === 'x-default') ?? alt[0];
       const others = alt.filter((a) => a !== def);
-      const display = others.length
-        ? `${def?.value ?? ''}  (+${others.length} translation${others.length > 1 ? 's' : ''})`
-        : undefined;
+      const display = others.length ? `${def?.value ?? ''}  (+${others.length} translation${others.length > 1 ? 's' : ''})` : undefined;
       return makeField({ ...base, kind: known?.ui === 'multiline' ? 'multiline' : 'text' }, def?.value ?? '', { display });
     }
     case 'bag':

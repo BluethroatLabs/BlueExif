@@ -145,7 +145,9 @@ function parseStream(b: Uint8Array, at: number): StreamInfo | null {
     }
     if (flags & 4) q += 100;
     if (flags & 8) q += 4;
-    const enc = latin1(b.subarray(q, q + 9)).replace(/[^\x20-\x7e].*$/s, '').trim();
+    const enc = latin1(b.subarray(q, q + 9))
+      .replace(/[^\x20-\x7e].*$/s, '')
+      .trim();
     if (/^(LAME|Lav[cf]|GOGO|L3\.)/.test(enc)) info.encoder = enc.replace(/\.+$/, '');
     return info;
   }
@@ -413,7 +415,7 @@ export const mp3Handler: FormatHandler = {
       if (size + 4 > h.length) return OTHER_AUDIO.includes(ctx.ext) ? 1 : 2;
       let p = size;
       while (p < h.length && h[p] === 0) p++; // padding beyond the declared size
-      if (startsWith(h, 'fLaC', p) || id3v2Size(h, p) && startsWith(h, 'fLaC', p + id3v2Size(h, p))) return 0;
+      if (startsWith(h, 'fLaC', p) || (id3v2Size(h, p) && startsWith(h, 'fLaC', p + id3v2Size(h, p)))) return 0;
       if (findMpegFrame(h, p, 4096) >= 0) return 3;
       return ext ? 2 : 1;
     }

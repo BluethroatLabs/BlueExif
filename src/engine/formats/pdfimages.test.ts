@@ -40,7 +40,8 @@ async function streams(bytes: Uint8Array): Promise<Map<string, Stream>> {
   for (const [ref, o] of doc.context.enumerateIndirectObjects()) {
     if (!(o instanceof PDFRawStream)) continue;
     const f = o.dict.lookup(PDFName.of('Filter'));
-    const filters = f instanceof PDFArray ? f.asArray().map((x) => (x instanceof PDFName ? x.decodeText() : String(x))) : f instanceof PDFName ? [f.decodeText()] : [];
+    const filters =
+      f instanceof PDFArray ? f.asArray().map((x) => (x instanceof PDFName ? x.decodeText() : String(x))) : f instanceof PDFName ? [f.decodeText()] : [];
     let data = o.contents;
     try {
       if (filters.every((x) => x === 'FlateDecode' || x === 'DCTDecode' || x === 'JPXDecode')) {
@@ -114,7 +115,9 @@ function pixels(bytes: Uint8Array, ext: string): string {
 
 /** Metadata tags ExifTool finds in an extracted image (COM markers show up as File:Comment). */
 async function etMeta(bytes: Uint8Array, name: string): Promise<string[]> {
-  return Object.keys(await exiftool(bytes, name)).filter((k) => k === 'File:Comment' || /^(IFD\d|ExifIFD|InteropIFD|GPS|XMP|IPTC|Photoshop|JUMBF|MPF|MakerNotes):/.test(k));
+  return Object.keys(await exiftool(bytes, name)).filter(
+    (k) => k === 'File:Comment' || /^(IFD\d|ExifIFD|InteropIFD|GPS|XMP|IPTC|Photoshop|JUMBF|MPF|MakerNotes):/.test(k),
+  );
 }
 
 /** Top-level JP2 box types. */
@@ -254,7 +257,11 @@ describe('pdf embedded images', () => {
   it('cleans a single image, then all of them through the group', async () => {
     const one = await bytesOf(await pdfHandler.write!(fixture(PHOTOS), edits({ [photo.id]: REMOVE })));
     const m1 = await read(one);
-    expect(imagesOf(m1)!.fields.map((f) => f.id).sort()).toEqual([flate, form, thumb, stamp].map((f) => f.id).sort());
+    expect(
+      imagesOf(m1)!
+        .fields.map((f) => f.id)
+        .sort(),
+    ).toEqual([flate, form, thumb, stamp].map((f) => f.id).sort());
     const s1 = await streams(one);
     await expectClean(s1, [photo]);
     expect(kinds(s1.get(refOf(flate))!.data)).toContain('exif');
@@ -279,7 +286,9 @@ describe('pdf embedded images', () => {
   it('undoes any filter chain before DCTDecode and keeps the DCT decode parameters', async () => {
     const doc = await PDFDocument.create({ updateMetadata: false });
     const jpeg = fixtureBytes('jpeg/camera.jpg');
-    const hex = `${Buffer.from(jpeg).toString('hex').replace(/.{1,64}/g, '$&\n')}>`;
+    const hex = `${Buffer.from(jpeg)
+      .toString('hex')
+      .replace(/.{1,64}/g, '$&\n')}>`;
     const ref = doc.context.register(
       doc.context.stream(hex, {
         Type: 'XObject',
@@ -419,7 +428,10 @@ describe('pdf embedded JPEG 2000 images', () => {
 
     const a = after.get(refOf(jp2))!.data;
     expect(jp2Boxes(a)).toEqual(['jP  ', 'ftyp', 'jp2h', 'jp2c']);
-    for (const [f, ext] of [[jp2, 'jp2'], [raw, 'j2k']] as const) {
+    for (const [f, ext] of [
+      [jp2, 'jp2'],
+      [raw, 'j2k'],
+    ] as const) {
       const was = j2k(codestream(before.get(refOf(f))!.data));
       const now = j2k(codestream(after.get(refOf(f))!.data));
       expect(was.markers).toContain(0x64);
@@ -437,7 +449,8 @@ describe('pdf embedded JPEG 2000 images', () => {
 });
 
 describe('pdf embedded JPEGs: JFIF thumbnails and segments among the scans', () => {
-  const seg = (marker: number, d: Uint8Array | number[]) => Buffer.concat([Buffer.from([0xff, marker, (d.length + 2) >> 8, (d.length + 2) & 0xff]), Buffer.from(d)]);
+  const seg = (marker: number, d: Uint8Array | number[]) =>
+    Buffer.concat([Buffer.from([0xff, marker, (d.length + 2) >> 8, (d.length + 2) & 0xff]), Buffer.from(d)]);
   const plain = fixtureBytes('jpeg/plain.jpg');
   const [jfif, com] = parseJpeg(plain).segments;
   // plain.jpg without its encoder comment: JFIF (no thumbnail) and coding segments only

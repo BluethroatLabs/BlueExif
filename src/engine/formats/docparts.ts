@@ -88,14 +88,7 @@ export function qname(root: XElement, el: XElement, uri: string, preferred: stri
 }
 
 /** Create an element in a namespace (prefix resolved in the scope of `parent`). */
-export function nsElement(
-  root: XElement,
-  parent: XElement,
-  uri: string,
-  preferred: string,
-  local: string,
-  text?: string,
-): XElement {
+export function nsElement(root: XElement, parent: XElement, uri: string, preferred: string, local: string, text?: string): XElement {
   return createElement(qname(root, parent, uri, preferred, local), {}, text);
 }
 
@@ -208,10 +201,7 @@ export function xmlBytes(doc: XDocument): Uint8Array {
 /** A new document with an XML declaration and the given root. */
 export function newXmlDoc(root: XElement, standalone = false): XDocument {
   return {
-    nodes: [
-      { type: 'pi', target: 'xml', value: `version="1.0" encoding="UTF-8"${standalone ? ' standalone="yes"' : ''}` },
-      root,
-    ],
+    nodes: [{ type: 'pi', target: 'xml', value: `version="1.0" encoding="UTF-8"${standalone ? ' standalone="yes"' : ''}` }, root],
     root,
   };
 }

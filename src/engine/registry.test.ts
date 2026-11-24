@@ -5,6 +5,7 @@ import { HANDLERS, detectHandler, readMetadata } from './index';
 import { FIXTURES, fixtureBytes } from './test/helpers';
 
 /** Expected handler id per extension. */
+// biome-ignore format: hand-packed table
 const BY_EXT: Record<string, string> = {
   jpg: 'jpeg', jpeg: 'jpeg', png: 'png', webp: 'webp', gif: 'gif',
   tif: 'tiff', tiff: 'tiff', dng: 'tiff', orf: 'tiff', cr2: 'tiff', nef: 'tiff', arw: 'tiff', rw2: 'tiff', pef: 'tiff',

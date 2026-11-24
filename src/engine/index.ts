@@ -58,12 +58,7 @@ export async function writeMetadata(blob: Blob, name: string, edits: Edits, src:
   return h.write(new Source(blob, name, src), edits);
 }
 
-export async function stripMetadata(
-  blob: Blob,
-  name: string,
-  opts: Partial<StripOptions> = {},
-  src: SourceOptions = {},
-): Promise<Blob> {
+export async function stripMetadata(blob: Blob, name: string, opts: Partial<StripOptions> = {}, src: SourceOptions = {}): Promise<Blob> {
   const h = await handlerFor(blob, name);
   if (!h.strip) throw new MetadataError(`Removing metadata from ${h.name} files is not supported yet`);
   return h.strip(new Source(blob, name, src), { ...DEFAULT_STRIP_OPTIONS, ...opts });

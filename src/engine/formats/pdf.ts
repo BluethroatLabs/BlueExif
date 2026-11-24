@@ -23,16 +23,7 @@
 import type { PDFArray, PDFContext, PDFDict, PDFDocument, PDFHexString, PDFName, PDFObject, PDFRef, PDFStream, PDFString } from 'pdf-lib';
 import { decodeXmlBytes } from '../core/xml';
 import { encodeUtf8, formatBytes, indexOfBytes, latin1, toBlob, toHex, utf16, utf8OrLatin1 } from '../core/binary';
-import {
-  asList,
-  asText,
-  displayDate,
-  makeField,
-  rawField,
-  requireDate,
-  toIso,
-  type DateParts,
-} from '../core/fields';
+import { asList, asText, displayDate, makeField, rawField, requireDate, toIso, type DateParts } from '../core/fields';
 import {
   MetadataError,
   groupKey,
@@ -98,6 +89,7 @@ const INFO: Record<string, InfoDef> = {
 
 const TRAPPED = ['True', 'False', 'Unknown'];
 
+// biome-ignore format: hand-packed table
 const MARKUP = new Set([
   'Text', 'FreeText', 'Line', 'Square', 'Circle', 'Polygon', 'PolyLine', 'Highlight', 'Underline',
   'Squiggly', 'StrikeOut', 'Stamp', 'Caret', 'Ink', 'FileAttachment', 'Sound', 'Redact', 'Popup',
@@ -105,8 +97,7 @@ const MARKUP = new Set([
 
 // ------------------------------------------------------------------ dates
 
-const PDF_DATE_RE =
-  /^\s*(?:D\s*:\s*)?(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?\s*(?:([Zz+-])\s*(?:(\d{1,2})\s*'?\s*(?:(\d{2})\s*'?)?)?)?/;
+const PDF_DATE_RE = /^\s*(?:D\s*:\s*)?(\d{4})(\d{2})?(\d{2})?(\d{2})?(\d{2})?(\d{2})?\s*(?:([Zz+-])\s*(?:(\d{1,2})\s*'?\s*(?:(\d{2})\s*'?)?)?)?/;
 
 /** Parse a PDF date string `D:YYYYMMDDHHmmSSOHH'mm'` (every part after the year optional). */
 export function parsePdfDate(s: string): DateParts | null {
@@ -220,7 +211,10 @@ function allDicts(pdf: Pdf): Array<[PDFRef, PDFDict]> {
 function everyDict(pdf: Pdf): PDFDict[] {
   const { lib } = pdf;
   const out: PDFDict[] = [];
-  const stack: PDFObject[] = pdf.ctx.enumerateIndirectObjects().map(([, o]) => o).reverse();
+  const stack: PDFObject[] = pdf.ctx
+    .enumerateIndirectObjects()
+    .map(([, o]) => o)
+    .reverse();
   const push = (items: PDFObject[]) => {
     for (let i = items.length - 1; i >= 0; i--) if (!(items[i] instanceof lib.PDFRef)) stack.push(items[i]);
   };
@@ -533,7 +527,10 @@ function signerSubject(b: Uint8Array): string {
   const [type, content] = derKids(b, top ?? undefined);
   if (type?.tag !== 0x06 || derHex(b, type) !== OID_SIGNED_DATA || content?.tag !== 0xa0) return '';
   const parts = derKids(b, derKids(b, content)[0]);
-  const certs = derKids(b, parts.find((e) => e.tag === 0xa0))
+  const certs = derKids(
+    b,
+    parts.find((e) => e.tag === 0xa0),
+  )
     .map((c) => certificate(b, c))
     .filter((c) => c !== null);
   // The signer's certificate is the one its SignerInfo names by issuer and serial number.
@@ -594,7 +591,8 @@ function signatureGroup(pdf: Pdf): FieldGroup {
       rawField(id('cert'), pre + (stamp ? 'Document timestamp' : 'Signer certificate'), signatureSummary(pdf, s.value), {
         sensitivity: stamp ? 'time' : 'identity',
         tag: '/Contents',
-        description: 'The signature value, with the certificate of whoever signed it. Removing it removes the whole signature value; the signature drawn on the page stays.',
+        description:
+          'The signature value, with the certificate of whoever signed it. Removing it removes the whole signature value; the signature drawn on the page stays.',
       }),
     );
   });
@@ -602,7 +600,9 @@ function signatureGroup(pdf: Pdf): FieldGroup {
   const dss = dictOf(pdf, catalog.get(nm(pdf, 'DSS')));
   if (dss) {
     const n = (k: string) => arrayOf(pdf, dss.get(nm(pdf, k))).length;
-    const parts = [plural(n('Certs'), 'certificate'), plural(n('OCSPs'), 'OCSP response'), plural(n('CRLs'), 'revocation list')].filter((p) => !p.startsWith('0 '));
+    const parts = [plural(n('Certs'), 'certificate'), plural(n('OCSPs'), 'OCSP response'), plural(n('CRLs'), 'revocation list')].filter(
+      (p) => !p.startsWith('0 '),
+    );
     fields.push(
       rawField('pdfsig:dss', 'Validation data', parts.join(', ') || 'Empty', {
         sensitivity: 'identity',
@@ -614,11 +614,19 @@ function signatureGroup(pdf: Pdf): FieldGroup {
   const perms = dictOf(pdf, catalog.get(nm(pdf, 'Perms')));
   if (perms?.keys().length) {
     fields.push(
-      rawField('pdfsig:perms', 'Signature permissions', perms.keys().map((k) => k.decodeText()).join(', '), {
-        sensitivity: 'software',
-        tag: '/Perms',
-        description: 'Certification (DocMDP) and usage-rights (UR3) signatures.',
-      }),
+      rawField(
+        'pdfsig:perms',
+        'Signature permissions',
+        perms
+          .keys()
+          .map((k) => k.decodeText())
+          .join(', '),
+        {
+          sensitivity: 'software',
+          tag: '/Perms',
+          description: 'Certification (DocMDP) and usage-rights (UR3) signatures.',
+        },
+      ),
     );
   }
   return { id: SIG_GROUP, label: 'Digital signatures', source: 'PDF', fields, removable: true };
@@ -651,7 +659,10 @@ function removeSignatures(pdf: Pdf): void {
 }
 
 function applySignatureEdits(pdf: Pdf, edits: Edits): void {
-  if (edits.get(groupKey(SIG_GROUP))?.op === 'remove') return removeSignatures(pdf);
+  if (edits.get(groupKey(SIG_GROUP))?.op === 'remove') {
+    removeSignatures(pdf);
+    return;
+  }
   const sigs = signatures(pdf);
   let changed = false;
   for (const [id, e] of edits) {
@@ -957,7 +968,8 @@ function extrasGroup(pdf: Pdf): FieldGroup {
       rawField('pdfdoc:attachments', att.length > 1 ? `Attachments (${att.length})` : 'Attachment', list, {
         sensitivity: 'content',
         tag: '/EmbeddedFiles, /AF',
-        description: 'Files embedded in the PDF, including files associated with pages or annotations. They are document content and are kept by “remove all”; remove them here.',
+        description:
+          'Files embedded in the PDF, including files associated with pages or annotations. They are document content and are kept by “remove all”; remove them here.',
       }),
     );
   }
@@ -982,7 +994,8 @@ function extrasGroup(pdf: Pdf): FieldGroup {
       rawField('pdfdoc:javascript', 'JavaScript and automatic actions', scripts, {
         sensitivity: 'content',
         tag: '/JavaScript, /AA',
-        description: 'Scripts, and actions that run by themselves when the document, a page or a form field is opened or used. They are not needed to display the file.',
+        description:
+          'Scripts, and actions that run by themselves when the document, a page or a form field is opened or used. They are not needed to display the file.',
       }),
     );
   }
@@ -993,7 +1006,8 @@ function extrasGroup(pdf: Pdf): FieldGroup {
       rawField('pdfdoc:file-links', 'Links to local files', list, {
         sensitivity: 'identity',
         tag: '/Launch, /GoToR /F',
-        description: 'Links that open files on a computer or network share. Their folders can reveal user and computer names; removing keeps only the file names.',
+        description:
+          'Links that open files on a computer or network share. Their folders can reveal user and computer names; removing keeps only the file names.',
       }),
     );
   }
@@ -1007,11 +1021,16 @@ function extrasGroup(pdf: Pdf): FieldGroup {
       size += reachableStreamBytes(pdf, d.get(nm(pdf, 'PieceInfo')));
     }
     fields.push(
-      rawField('pdfdoc:pieceinfo', 'Private application data', `${[...apps].join(', ') || 'Unknown'} — ${formatBytes(size)} on ${pieces.length} object${pieces.length > 1 ? 's' : ''}`, {
-        sensitivity: 'software',
-        tag: '/PieceInfo',
-        description: 'Editing data saved by the creating application (e.g. a full Illustrator document).',
-      }),
+      rawField(
+        'pdfdoc:pieceinfo',
+        'Private application data',
+        `${[...apps].join(', ') || 'Unknown'} — ${formatBytes(size)} on ${pieces.length} object${pieces.length > 1 ? 's' : ''}`,
+        {
+          sensitivity: 'software',
+          tag: '/PieceInfo',
+          description: 'Editing data saved by the creating application (e.g. a full Illustrator document).',
+        },
+      ),
     );
   }
   // Images' own XMP is reported (and cleaned) by the "Embedded images" group.
@@ -1180,7 +1199,11 @@ function removeAttachments(pdf: Pdf): void {
   for (const d of afHolders(pdf)) d.delete(nm(pdf, 'AF'));
   catalog.delete(nm(pdf, 'Collection'));
   // File-attachment annotations, and the popups that point back at them.
-  const gone = new Set(annotations(pdf).filter((a) => a.subtype === 'FileAttachment').map((a) => a.dict));
+  const gone = new Set(
+    annotations(pdf)
+      .filter((a) => a.subtype === 'FileAttachment')
+      .map((a) => a.dict),
+  );
   for (const page of pageDicts(pdf)) {
     const annots = pdf.ctx.lookup(page.get(nm(pdf, 'Annots')));
     if (!(annots instanceof pdf.lib.PDFArray)) continue;

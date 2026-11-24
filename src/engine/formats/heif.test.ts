@@ -157,10 +157,7 @@ describe('heif: writing', () => {
   it('moves a larger payload to a new mdat and zeroes the old bytes', async () => {
     const original = fixtureBytes('isobmff/camera.heic');
     const long = 'Long comment '.repeat(400);
-    const out = await heifHandler.write!(
-      fixture('isobmff/camera.heic'),
-      edits({ 'exif:exif:9286': long, [DESC]: 'replaced', [XMP_DESC]: 'x'.repeat(4000) }),
-    );
+    const out = await heifHandler.write!(fixture('isobmff/camera.heic'), edits({ 'exif:exif:9286': long, [DESC]: 'replaced', [XMP_DESC]: 'x'.repeat(4000) }));
     const bytes = await bytesOf(out);
     expect(await topTypes(bytes)).toEqual(['ftyp', 'meta', 'mdat', 'mdat']);
     expect(has(bytes, MARKER)).toBe(false);
@@ -322,7 +319,14 @@ describe('heif: image sequences', () => {
     for (const s of [MARKER, 'iPhone', 'Golden hour', 'Apple', 'libx264', 'FFMP', 'Handler']) expect(has(bytes, s)).toBe(false);
     expect(await newProblems(bytes, original, 'seq.heic')).toEqual([]);
     const et = await exiftool(bytes, 'seq.heic');
-    for (const k of ['QuickTime:CreateDate', 'QuickTime:ModifyDate', 'Track1:TrackCreateDate', 'Track1:TrackModifyDate', 'Track1:MediaCreateDate', 'Track2:MediaModifyDate']) {
+    for (const k of [
+      'QuickTime:CreateDate',
+      'QuickTime:ModifyDate',
+      'Track1:TrackCreateDate',
+      'Track1:TrackModifyDate',
+      'Track1:MediaCreateDate',
+      'Track2:MediaModifyDate',
+    ]) {
       expect(et[k]).toBe('0000:00:00 00:00:00');
     }
     expect(etMetaKeys(et).filter((k) => /^(Keys|UserData|ItemList|XMP|IFD|ExifIFD|GPS)/.test(k))).toEqual([]);

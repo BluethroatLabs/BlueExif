@@ -79,7 +79,10 @@ export async function inspectEmbedded(bytes: Uint8Array, name: string): Promise<
   } catch (e) {
     throw e instanceof MetadataError ? e : new MetadataError(`${h.name} could not be read`);
   }
-  return revealed(m.format.name, m.groups.flatMap((g) => g.fields.map((f) => f.sensitivity)));
+  return revealed(
+    m.format.name,
+    m.groups.flatMap((g) => g.fields.map((f) => f.sensitivity)),
+  );
 }
 
 /**

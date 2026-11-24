@@ -979,10 +979,23 @@ export async function readMatroska(src: Source): Promise<Metadata> {
   const mux = infoChild(doc, ID.MuxingApp);
   const wr = infoChild(doc, ID.WritingApp);
   const appNote = `Mandatory: removing it stores “${NEUTRAL_APP}”.`;
-  if (mux) segFields.push(makeField(spec('mkv:muxingapp', 'Muxing application', 'text', { sensitivity: 'software', tag: 'Info/MuxingApp', description: appNote }), readText(mux.data)));
-  if (wr) segFields.push(makeField(spec('mkv:writingapp', 'Writing application', 'text', { sensitivity: 'software', tag: 'Info/WritingApp', description: appNote }), readText(wr.data)));
+  if (mux)
+    segFields.push(
+      makeField(
+        spec('mkv:muxingapp', 'Muxing application', 'text', { sensitivity: 'software', tag: 'Info/MuxingApp', description: appNote }),
+        readText(mux.data),
+      ),
+    );
+  if (wr)
+    segFields.push(
+      makeField(
+        spec('mkv:writingapp', 'Writing application', 'text', { sensitivity: 'software', tag: 'Info/WritingApp', description: appNote }),
+        readText(wr.data),
+      ),
+    );
   const fname = infoChild(doc, ID.SegmentFilename);
-  if (fname) segFields.push(rawField('mkv:segmentfilename', 'Segment file name', readText(fname.data), { sensitivity: 'content', tag: 'Info/SegmentFilename' }));
+  if (fname)
+    segFields.push(rawField('mkv:segmentfilename', 'Segment file name', readText(fname.data), { sensitivity: 'content', tag: 'Info/SegmentFilename' }));
   const uid = infoChild(doc, ID.SegmentUID);
   if (uid) {
     segFields.push(
@@ -1061,7 +1074,12 @@ export async function readMatroska(src: Source): Promise<Metadata> {
     rawField(`mkv:element:${u.pos}`, `Unknown element 0x${u.id.toString(16).toUpperCase()}`, formatBytes(u.end - u.pos), { tag: 'Segment child' }),
   );
   if (!L.chained && L.segEnd < src.size) {
-    other.push(rawField('mkv:trailer', 'Data after segment', `${formatBytes(src.size - L.segEnd)} after the end of the Matroska segment`, { sensitivity: 'content', tag: 'Trailer' }));
+    other.push(
+      rawField('mkv:trailer', 'Data after segment', `${formatBytes(src.size - L.segEnd)} after the end of the Matroska segment`, {
+        sensitivity: 'content',
+        tag: 'Trailer',
+      }),
+    );
   }
   if (other.length) groups.push({ id: 'mkv.other', label: 'Embedded data', source: 'Matroska', fields: other, removable: true });
 
@@ -1123,7 +1141,12 @@ function randomUid(): bigint {
 function attachedFile(a: Attachment, data: Uint8Array): Uint8Array {
   const kids: Uint8Array[] = [];
   if (a.description) kids.push(stringElement(ID.FileDescription, a.description));
-  kids.push(stringElement(ID.FileName, a.name), stringElement(ID.FileMediaType, a.mime), element(ID.FileData, data), uintElement(ID.FileUID, a.uid ?? randomUid()));
+  kids.push(
+    stringElement(ID.FileName, a.name),
+    stringElement(ID.FileMediaType, a.mime),
+    element(ID.FileData, data),
+    uintElement(ID.FileUID, a.uid ?? randomUid()),
+  );
   return element(ID.AttachedFile, ...kids);
 }
 
@@ -1342,7 +1365,11 @@ async function assemble(doc: Doc, opts: { keepUnknown: (el: L1) => boolean; keep
   const els = L.elements;
 
   // Metadata elements placed before the clusters.
-  const infoBytes = master(ID.Info, doc.info.map((c) => c.raw), crc);
+  const infoBytes = master(
+    ID.Info,
+    doc.info.map((c) => c.raw),
+    crc,
+  );
   const tracksBytes = serializeTracks(doc);
   const tagsBytes = serializeTags(doc.tags, crc);
   let attParts: Part[] = [];

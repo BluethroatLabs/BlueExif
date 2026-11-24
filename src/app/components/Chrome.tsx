@@ -118,8 +118,8 @@ export function Productbar() {
         </div>
         <div className="productbar-copy">
           <p>
-            BlueExif is a local metadata editor. See, edit and remove the hidden data in photos, music, videos and
-            documents — GPS location, camera serials, author names, edit history — before you share them.
+            BlueExif is a local metadata editor. See, edit and remove the hidden data in photos, music, videos and documents — GPS location, camera serials,
+            author names, edit history — before you share them.
           </p>
         </div>
       </div>
@@ -312,11 +312,7 @@ export function DropOverlay() {
       if (!files.length) return;
       e.preventDefault();
       void addFiles(
-        files.map((f, i) =>
-          f.name && f.name !== 'image.png'
-            ? f
-            : new File([f], `pasted-${i + 1}.${f.type.split('/')[1] || 'bin'}`, { type: f.type }),
-        ),
+        files.map((f, i) => (f.name && f.name !== 'image.png' ? f : new File([f], `pasted-${i + 1}.${f.type.split('/')[1] || 'bin'}`, { type: f.type }))),
       );
     };
     window.addEventListener('dragenter', enter);
@@ -440,8 +436,8 @@ export function StripDialog() {
             <strong>{single}</strong> —{' '}
           </>
         )}
-        EXIF, GPS, XMP, IPTC, tags, comments, thumbnails and edit history are removed. Image, audio and video data are
-        copied as-is, never re-encoded. You can undo afterwards.
+        EXIF, GPS, XMP, IPTC, tags, comments, thumbnails and edit history are removed. Image, audio and video data are copied as-is, never re-encoded. You can
+        undo afterwards.
       </p>
       {(cats.has('image') || !cats.size) && (
         <label className="option">
@@ -507,8 +503,7 @@ export function ConfirmCloseDialog() {
     >
       <p>
         {count} file{count === 1 ? '' : 's'} will be removed from this page.
-        {changed ? ` ${changed} ha${changed === 1 ? 's' : 've'} changes that were not downloaded.` : ''} Your
-        original files on disk are not affected.
+        {changed ? ` ${changed} ha${changed === 1 ? 's' : 've'} changes that were not downloaded.` : ''} Your original files on disk are not affected.
       </p>
     </Dialog>
   );
@@ -529,18 +524,16 @@ export function AboutDialog() {
       }
     >
       <p>
-        <strong>Everything stays on this device.</strong> Files are read and rewritten by a metadata engine running in
-        your browser. The page’s security policy blocks connections to other servers, and the app keeps working offline
-        once loaded.
+        <strong>Everything stays on this device.</strong> Files are read and rewritten by a metadata engine running in your browser. The page’s security policy
+        blocks connections to other servers, and the app keeps working offline once loaded.
       </p>
       <p>
-        <strong>Nothing is re-encoded.</strong> BlueExif rebuilds the file’s containers — EXIF, XMP, IPTC, ID3, Vorbis
-        comments, QuickTime atoms, PDF and Office properties — and copies pixels, audio and video byte-for-byte.
+        <strong>Nothing is re-encoded.</strong> BlueExif rebuilds the file’s containers — EXIF, XMP, IPTC, ID3, Vorbis comments, QuickTime atoms, PDF and Office
+        properties — and copies pixels, audio and video byte-for-byte.
       </p>
       <p>
-        <strong>Old data really goes away.</strong> Writers rebuild files instead of appending, so earlier revisions
-        (such as incremental PDF updates) do not linger. Review the result after saving: BlueExif re-reads the new file
-        and shows exactly what remains.
+        <strong>Old data really goes away.</strong> Writers rebuild files instead of appending, so earlier revisions (such as incremental PDF updates) do not
+        linger. Review the result after saving: BlueExif re-reads the new file and shows exactly what remains.
       </p>
     </Dialog>
   );
@@ -591,8 +584,8 @@ export function OfflineDialog() {
         }
       >
         <p>
-          This copy of BlueExif runs entirely from the HTML file on your device: the app, the metadata engine and the
-          PDF viewer are all inside it, and its security policy forbids every network connection.
+          This copy of BlueExif runs entirely from the HTML file on your device: the app, the metadata engine and the PDF viewer are all inside it, and its
+          security policy forbids every network connection.
         </p>
         <p>Disconnect before opening private files if you want to be certain nothing can leave this device.</p>
         {connection}
@@ -619,29 +612,23 @@ export function OfflineDialog() {
       }
     >
       <p>
-        <strong>How do you know BlueExif isn’t uploading your files?</strong> Check for yourself: use it with your device
-        disconnected. With no network connection, the page has nowhere to send your files.
+        <strong>How do you know BlueExif isn’t uploading your files?</strong> Check for yourself: use it with your device disconnected. With no network
+        connection, the page has nowhere to send your files.
       </p>
       <ol className="step-list">
         <li>
-          <strong>Download the offline edition.</strong> Everything — the app, the metadata engine and the PDF viewer —
-          is in one HTML file.
+          <strong>Download the offline edition.</strong> Everything — the app, the metadata engine and the PDF viewer — is in one HTML file.
         </li>
         <li>
           <strong>Disconnect before opening your files.</strong> Turn off Wi-Fi and mobile data; unplug Ethernet.
         </li>
         <li>
-          <strong>Open the HTML file in your browser.</strong> Drop in your files, clean them and save the results. Close
-          it before reconnecting.
+          <strong>Open the HTML file in your browser.</strong> Drop in your files, clean them and save the results. Close it before reconnecting.
         </li>
       </ol>
       {connection}
-      {hasFiles && (
-        <p className="dialog-warning">Files already open on this page stay here; reopen them in the offline edition.</p>
-      )}
-      <p className="control-hint">
-        Working offline shows that no server is needed. It does not vouch for the code or for your device.
-      </p>
+      {hasFiles && <p className="dialog-warning">Files already open on this page stay here; reopen them in the offline edition.</p>}
+      <p className="control-hint">Working offline shows that no server is needed. It does not vouch for the code or for your device.</p>
     </Dialog>
   );
 }

@@ -133,10 +133,7 @@ describe('jpeg', () => {
   });
 
   it('removes whole groups', async () => {
-    const out = await jpegHandler.write!(
-      fixture('jpeg/camera.jpg'),
-      edits({ [groupKey('xmp')]: REMOVE, [groupKey('iptc')]: REMOVE }),
-    );
+    const out = await jpegHandler.write!(fixture('jpeg/camera.jpg'), edits({ [groupKey('xmp')]: REMOVE, [groupKey('iptc')]: REMOVE }));
     const et = await exiftool(out, 'x.jpg');
     expect(etProblems(et)).toEqual([]);
     expect(Object.keys(et).filter((k) => k.startsWith('XMP') || k.startsWith('IPTC'))).toEqual([]);
@@ -252,7 +249,12 @@ describe('jpeg: data the header walk does not see', () => {
     expect(j.scanEnd).toBe(body.length);
 
     const m = await jpegHandler.read(Source.fromBytes(body, 'x.jpg'));
-    expect(field(m, 'jpeg:late:0')).toMatchObject({ label: 'Comment inside the image data', display: `“note ${MARKER}”`, sensitivity: 'content', removable: true });
+    expect(field(m, 'jpeg:late:0')).toMatchObject({
+      label: 'Comment inside the image data',
+      display: `“note ${MARKER}”`,
+      sensitivity: 'content',
+      removable: true,
+    });
     expect(field(m, 'jpeg:late:1')).toMatchObject({ label: 'EXIF inside the image data', sensitivity: 'device' }); // unreadable: judged by kind
 
     const out = await bytesOf(await jpegHandler.strip!(Source.fromBytes(body, 'x.jpg'), strip()));

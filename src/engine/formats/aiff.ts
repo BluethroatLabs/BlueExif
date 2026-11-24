@@ -199,7 +199,10 @@ function serializeComt(cs: Comment[]): Uint8Array {
   w.u16(cs.length);
   for (const c of cs) {
     const t = encodeUtf8(c.text);
-    w.u32(c.time).u16(c.marker & 0xffff).u16(t.length).bytes(t);
+    w.u32(c.time)
+      .u16(c.marker & 0xffff)
+      .u16(t.length)
+      .bytes(t);
     if (t.length & 1) w.u8(0);
   }
   return w.finish();
@@ -268,7 +271,8 @@ export async function readAiff(src: Source): Promise<Metadata> {
       other.push(rawField(`aiff:chunk:${i}`, `Application data (${sig})`, formatBytes(c.size), { sensitivity: 'software', tag: 'APPL' }));
     } else other.push(rawField(`aiff:chunk:${i}`, `Chunk “${c.id.trim()}”`, formatBytes(c.size), { sensitivity: 'content', tag: c.id }));
   });
-  if (a.end < src.size) other.push(rawField('aiff:trailer', 'Data after the FORM chunk', formatBytes(src.size - a.end), { sensitivity: 'content', tag: 'Trailer' }));
+  if (a.end < src.size)
+    other.push(rawField('aiff:trailer', 'Data after the FORM chunk', formatBytes(src.size - a.end), { sensitivity: 'content', tag: 'Trailer' }));
   if (other.length) groups.push({ id: 'aiff.other', label: 'Other chunks', source: 'AIFF', fields: other, removable: true });
   return {
     format: { id: 'aiff', name: a.aifc ? 'AIFF-C audio' : 'AIFF audio', mime: 'audio/aiff', category: 'audio' },
@@ -330,7 +334,10 @@ function assemble(src: Source, a: Aiff, replace: Replace, added: Array<{ id: str
   if (keepTrailer && a.end < src.size) parts.push(src.slice(a.end));
   if (size > 0xffffffff) throw new MetadataError('The file would exceed the 4 GB AIFF limit');
   const head = new Writer(false, 12);
-  head.ascii('FORM').u32(size).ascii(a.aifc ? 'AIFC' : 'AIFF');
+  head
+    .ascii('FORM')
+    .u32(size)
+    .ascii(a.aifc ? 'AIFC' : 'AIFF');
   return toBlob([head.finish(), ...parts], 'audio/aiff');
 }
 

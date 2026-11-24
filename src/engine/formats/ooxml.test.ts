@@ -185,8 +185,12 @@ describe('ooxml', () => {
     expect(field(m, 'ooxml:custom:Reviewed')?.value).toBe('yes');
     expect(field(m, 'ooxml:app:Manager')?.value).toBe('Max');
     const t = texts(bytes);
-    expect(t['[Content_Types].xml']).toContain('PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"');
-    expect(t['_rels/.rels']).toMatch(/Type="http:\/\/schemas.openxmlformats.org\/officeDocument\/2006\/relationships\/custom-properties" Target="docProps\/custom.xml"/);
+    expect(t['[Content_Types].xml']).toContain(
+      'PartName="/docProps/custom.xml" ContentType="application/vnd.openxmlformats-officedocument.custom-properties+xml"',
+    );
+    expect(t['_rels/.rels']).toMatch(
+      /Type="http:\/\/schemas.openxmlformats.org\/officeDocument\/2006\/relationships\/custom-properties" Target="docProps\/custom.xml"/,
+    );
     if (HAS_PYTHON) {
       const py = pyZip(bytes, ['docProps/core.xml']);
       expect(py.xmlErrors).toEqual({});
@@ -209,7 +213,13 @@ describe('ooxml', () => {
     const files: Record<string, Uint8Array> = {};
     for (const [k, v] of Object.entries(plain)) {
       if (k === 'docProps/app.xml') continue;
-      files[k] = strToU8(k === '_rels/.rels' ? v.replace(/<Relationship[^>]*extended-properties[^>]*\/>/, '') : k === '[Content_Types].xml' ? v.replace(/<Override PartName="\/docProps\/app.xml"[^>]*\/>/, '') : v);
+      files[k] = strToU8(
+        k === '_rels/.rels'
+          ? v.replace(/<Relationship[^>]*extended-properties[^>]*\/>/, '')
+          : k === '[Content_Types].xml'
+            ? v.replace(/<Override PartName="\/docProps\/app.xml"[^>]*\/>/, '')
+            : v,
+      );
     }
     const noApp = zipSync(files);
     expect((await read(noApp)).groups.find((g) => g.id === 'ooxml.app')?.fields).toEqual([]);
@@ -305,7 +315,8 @@ const RICH_PNG = fixtureBytes('images/rich.png');
 
 const addRels = (xml: string, rels: string) => xml.replace('</Relationships>', `${rels}</Relationships>`);
 const addTypes = (xml: string, types: string) => xml.replace('</Types>', `${types}</Types>`);
-const relsXml = (rels: string) => `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`;
+const relsXml = (rels: string) =>
+  `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${rels}</Relationships>`;
 
 /** A Windows DEVMODE with `name` as dmDeviceName. */
 function devmode(name: string): Uint8Array {
@@ -351,7 +362,9 @@ function richerDocx(extra: Record<string, Uint8Array> = {}): Uint8Array {
   for (const [k, v] of Object.entries(extra)) f[k] = v;
   f['word/_rels/document.xml.rels'] = strToU8(addRels(text('word/_rels/document.xml.rels'), docRels));
   f['[Content_Types].xml'] = strToU8(addTypes(text('[Content_Types].xml'), types));
-  f['word/settings.xml'] = strToU8(text('word/settings.xml').replace('<w:rsids>', `<w:docVars><w:docVar w:name="ClientId" w:val="Client ${MARK}"/></w:docVars><w:rsids>`));
+  f['word/settings.xml'] = strToU8(
+    text('word/settings.xml').replace('<w:rsids>', `<w:docVars><w:docVar w:name="ClientId" w:val="Client ${MARK}"/></w:docVars><w:rsids>`),
+  );
   const hlinks = `<HLinks><vt:vector size="6" baseType="variant"><vt:variant><vt:i4>1</vt:i4></vt:variant><vt:variant><vt:i4>0</vt:i4></vt:variant><vt:variant><vt:i4>0</vt:i4></vt:variant><vt:variant><vt:i4>5</vt:i4></vt:variant><vt:variant><vt:lpwstr>file:///C:/Users/${MARK}/Budget%20Q1.xlsx</vt:lpwstr></vt:variant><vt:variant><vt:lpwstr></vt:lpwstr></vt:variant></vt:vector></HLinks>`;
   f['docProps/app.xml'] = strToU8(text('docProps/app.xml').replace('</Properties>', `${hlinks}</Properties>`));
   return zipSync(f);
@@ -426,14 +439,20 @@ describe('ooxml: hidden parts and embedded pictures', () => {
     expect(t['word/_rels/document.xml.rels']).not.toContain('printerSettings');
     expect(t['[Content_Types].xml']).not.toContain('printerSettings');
     // local links reduced to file names, web links untouched
-    expect(t['word/_rels/document.xml.rels']).toContain('Id="rIdL1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="Budget%20Q1.xlsx" TargetMode="External"');
+    expect(t['word/_rels/document.xml.rels']).toContain(
+      'Id="rIdL1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/hyperlink" Target="Budget%20Q1.xlsx" TargetMode="External"',
+    );
     expect(t['word/_rels/document.xml.rels']).toContain('Target="Plan.docx"');
     expect(t['word/_rels/document.xml.rels']).toContain('Target="https://example.com/page"');
     expect(t['word/_rels/document.xml.rels']).toContain('Target="media/image1.jpeg"');
     expect(t['word/settings.xml']).not.toContain('docVar');
     expect(t['docProps/app.xml']).not.toMatch(/HLinks|HyperlinkBase/);
     const m = await read(bytes);
-    expect(allFields(m).map((f) => f.id).filter((id) => id !== 'ooxml:hidden:authors')).toEqual([]);
+    expect(
+      allFields(m)
+        .map((f) => f.id)
+        .filter((id) => id !== 'ooxml:hidden:authors'),
+    ).toEqual([]);
     if (HAS_PYTHON) {
       const py = pyZip(bytes, ['word/_rels/document.xml.rels', 'word/settings.xml', '[Content_Types].xml']);
       expect(py.bad).toBeNull();
@@ -455,11 +474,18 @@ describe('ooxml: hidden parts and embedded pictures', () => {
     const out = await bytesOf(
       await ooxmlHandler.write!(
         src(),
-        edits({ 'ooxml:hidden:server': REMOVE, 'ooxml:hidden:printer': REMOVE, 'ooxml:hidden:links': REMOVE, 'ooxml:hidden:docvars': REMOVE, 'ooxml:app:HLinks': REMOVE }),
+        edits({
+          'ooxml:hidden:server': REMOVE,
+          'ooxml:hidden:printer': REMOVE,
+          'ooxml:hidden:links': REMOVE,
+          'ooxml:hidden:docvars': REMOVE,
+          'ooxml:app:HLinks': REMOVE,
+        }),
       ),
     );
     const m = await read(out);
-    for (const id of ['ooxml:hidden:server', 'ooxml:hidden:printer', 'ooxml:hidden:links', 'ooxml:hidden:docvars', 'ooxml:app:HLinks']) expect(field(m, id), id).toBeUndefined();
+    for (const id of ['ooxml:hidden:server', 'ooxml:hidden:printer', 'ooxml:hidden:links', 'ooxml:hidden:docvars', 'ooxml:app:HLinks'])
+      expect(field(m, id), id).toBeUndefined();
     expect(field(m, 'ooxml:media:word/media/image1.jpeg')).toBeDefined();
     expect(field(m, 'ooxml:hidden:template')).toBeDefined();
     const t = texts(out);
@@ -484,10 +510,20 @@ describe('ooxml: hidden parts and embedded pictures', () => {
     );
     f['xl/printerSettings/printerSettings1.bin'] = devmode(`Office printer ${MARK}`);
     f['xl/media/image1.png'] = RICH_PNG;
-    f['xl/worksheets/sheet1.xml'] = strToU8(text('xl/worksheets/sheet1.xml').replace('<legacyDrawing', '<pageSetup orientation="landscape" r:id="rId3"/><legacyDrawing'));
-    f['xl/worksheets/_rels/sheet1.xml.rels'] = strToU8(addRels(text('xl/worksheets/_rels/sheet1.xml.rels'), `<Relationship Id="rId3" Type="${REL_NS}/printerSettings" Target="../printerSettings/printerSettings1.bin"/>`));
+    f['xl/worksheets/sheet1.xml'] = strToU8(
+      text('xl/worksheets/sheet1.xml').replace('<legacyDrawing', '<pageSetup orientation="landscape" r:id="rId3"/><legacyDrawing'),
+    );
+    f['xl/worksheets/_rels/sheet1.xml.rels'] = strToU8(
+      addRels(
+        text('xl/worksheets/_rels/sheet1.xml.rels'),
+        `<Relationship Id="rId3" Type="${REL_NS}/printerSettings" Target="../printerSettings/printerSettings1.bin"/>`,
+      ),
+    );
     f['[Content_Types].xml'] = strToU8(
-      addTypes(text('[Content_Types].xml'), '<Default Extension="png" ContentType="image/png"/><Default Extension="bin" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings"/>'),
+      addTypes(
+        text('[Content_Types].xml'),
+        '<Default Extension="png" ContentType="image/png"/><Default Extension="bin" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.printerSettings"/>',
+      ),
     );
     const book = zipSync(f);
     const m = await read(book);
@@ -510,7 +546,11 @@ describe('ooxml: hidden parts and embedded pictures', () => {
     const png = unzipSync(bytes)['xl/media/image1.png'];
     expect(await inspectEmbedded(png, 'image1.png')).toBeNull();
     expect(equalBytes(idat(png), idat(RICH_PNG))).toBe(true);
-    expect(allFields(await read(bytes)).map((x) => x.id).filter((id) => id !== 'ooxml:hidden:authors')).toEqual([]);
+    expect(
+      allFields(await read(bytes))
+        .map((x) => x.id)
+        .filter((id) => id !== 'ooxml:hidden:authors'),
+    ).toEqual([]);
   });
 
   it('scans Visio comment authors', async () => {
@@ -520,7 +560,9 @@ describe('ooxml: hidden parts and embedded pictures', () => {
       ),
       '_rels/.rels': strToU8(relsXml(`<Relationship Id="rId1" Type="${REL_NS}/officeDocument" Target="visio/document.xml"/>`)),
       'visio/document.xml': strToU8('<?xml version="1.0" encoding="utf-8"?><VisioDocument xmlns="http://schemas.microsoft.com/office/visio/2012/main"/>'),
-      'visio/_rels/document.xml.rels': strToU8(relsXml('<Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/comments" Target="comments.xml"/>')),
+      'visio/_rels/document.xml.rels': strToU8(
+        relsXml('<Relationship Id="rId1" Type="http://schemas.microsoft.com/visio/2010/relationships/comments" Target="comments.xml"/>'),
+      ),
       'visio/comments.xml': strToU8(
         `<?xml version="1.0" encoding="utf-8"?><Comments xmlns="http://schemas.microsoft.com/office/visio/2012/main"><AuthorList><AuthorEntry ID="0" Name="Jane ${MARK}" Initials="JS" ResolutionID="jane@${MARK}.example"/></AuthorList><CommentList><CommentEntry AuthorID="0" PageID="0" ShapeID="1" Date="2024-05-01T10:00:00" EditDate="2024-05-02T10:00:00">Move this box</CommentEntry></CommentList></Comments>`,
       ),

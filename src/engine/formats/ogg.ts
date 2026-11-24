@@ -141,7 +141,16 @@ function paginate(packets: Uint8Array[], serial: number, firstSeq: number, flush
       const body = concat(chunk.map((c) => c.packet.subarray(c.pos, c.pos + c.len)));
       const flags = (seq === firstSeq ? 0x02 : 0) | (chunk[0].pos > 0 ? 0x01 : 0);
       const granule = chunk.some((c) => c.end) ? GRANULE_ZERO : GRANULE_NONE;
-      pages.push(buildPage(flags, granule, serial, seq++, chunk.map((c) => c.len), body));
+      pages.push(
+        buildPage(
+          flags,
+          granule,
+          serial,
+          seq++,
+          chunk.map((c) => c.len),
+          body,
+        ),
+      );
       s += chunk.length;
     }
   }
@@ -309,7 +318,10 @@ function tagsOf(s: OggStream): Tags | null {
 }
 
 function withPictures(vc: VorbisComments, pics: FlacPicture[]): VorbisComments {
-  return { vendor: vc.vendor, comments: [...vc.comments, ...pics.map((p) => ({ key: 'METADATA_BLOCK_PICTURE', value: base64Encode(serializeFlacPicture(p)) }))] };
+  return {
+    vendor: vc.vendor,
+    comments: [...vc.comments, ...pics.map((p) => ({ key: 'METADATA_BLOCK_PICTURE', value: base64Encode(serializeFlacPicture(p)) }))],
+  };
 }
 
 /** New header packets for the edited tags. */
@@ -361,7 +373,11 @@ function codecInfo(s: OggStream, last: { granule: number | null } | null, size: 
         const channels = h[9];
         const preskip = r.u16(10);
         const input = r.u32(12);
-        info.push({ label: 'Codec', value: 'Opus' }, { label: 'Channels', value: String(channels) }, { label: 'Sample rate', value: `48000 Hz${input ? ` (input ${input} Hz)` : ''}` });
+        info.push(
+          { label: 'Codec', value: 'Opus' },
+          { label: 'Channels', value: String(channels) },
+          { label: 'Sample rate', value: `48000 Hz${input ? ` (input ${input} Hz)` : ''}` },
+        );
         if (g !== null) secs = Math.max(0, g - preskip) / 48000;
         break;
       }
@@ -406,7 +422,14 @@ export async function readOgg(src: Source): Promise<Metadata> {
   const source = s.codec === 'opus' ? 'Opus tags' : s.codec === 'flac' ? 'Ogg FLAC' : 'Vorbis comment';
   const groups: FieldGroup[] = t ? vorbisGroups(t.vc, t.pictures, { source, addable: canWrite, pictures: canWrite || t.pictures.length > 0 }) : [];
   if (t?.blocks.length) {
-    const fields: Field[] = t.blocks.map((b, i) => rawField(`ogg:block:${i}`, b.type === BLOCK.APPLICATION ? `Application data (${latin1(b.data.subarray(0, 4))})` : `Metadata block ${b.type}`, formatBytes(b.data.length), { tag: `FLAC block ${b.type}` }));
+    const fields: Field[] = t.blocks.map((b, i) =>
+      rawField(
+        `ogg:block:${i}`,
+        b.type === BLOCK.APPLICATION ? `Application data (${latin1(b.data.subarray(0, 4))})` : `Metadata block ${b.type}`,
+        formatBytes(b.data.length),
+        { tag: `FLAC block ${b.type}` },
+      ),
+    );
     groups.push({ id: 'ogg.other', label: 'Other metadata blocks', source: 'Ogg FLAC', fields, removable: true });
   }
   if (!canWrite) for (const g of groups) g.removable = false;

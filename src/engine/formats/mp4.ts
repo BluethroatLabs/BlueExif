@@ -432,7 +432,17 @@ const CODECS: Record<string, string> = {
 
 const TIMED_META = new Set(['mebx', 'mett', 'metx', 'urim', 'gpmd', 'fdsc', 'camm', 'rtmd', 'djmd', 'dbgi']);
 
-const AAC_PROFILES: Record<number, string> = { 1: 'AAC Main', 2: 'AAC-LC', 3: 'AAC SSR', 4: 'AAC LTP', 5: 'HE-AAC', 23: 'AAC-LD', 29: 'HE-AAC v2', 39: 'AAC-ELD', 42: 'xHE-AAC' };
+const AAC_PROFILES: Record<number, string> = {
+  1: 'AAC Main',
+  2: 'AAC-LC',
+  3: 'AAC SSR',
+  4: 'AAC LTP',
+  5: 'HE-AAC',
+  23: 'AAC-LD',
+  29: 'HE-AAC v2',
+  39: 'AAC-ELD',
+  42: 'xHE-AAC',
+};
 
 const AUDIO_BRANDS = new Set(['M4A ', 'M4B ', 'M4P ', 'F4A ', 'F4B ']);
 
@@ -757,7 +767,11 @@ function dropIodsRefs(moov: BoxNode, ids: Set<number>): void {
   const w = new Writer(false, body.length + 16);
   w.bytes(d.subarray(0, 4)).u8(od.tag);
   if (body.length < 0x80) w.u8(body.length);
-  else w.u8(0x80 | ((body.length >> 21) & 0x7f)).u8(0x80 | ((body.length >> 14) & 0x7f)).u8(0x80 | ((body.length >> 7) & 0x7f)).u8(body.length & 0x7f);
+  else
+    w.u8(0x80 | ((body.length >> 21) & 0x7f))
+      .u8(0x80 | ((body.length >> 14) & 0x7f))
+      .u8(0x80 | ((body.length >> 7) & 0x7f))
+      .u8(body.length & 0x7f);
   iods!.data = w.bytes(body).bytes(d.subarray(od.end)).finish();
 }
 
@@ -896,8 +910,7 @@ function pairText(v: Uint8Array): string | null {
   return total ? `${n}/${total}` : String(n);
 }
 
-const imageMime = (type: number, v: Uint8Array) =>
-  type === 13 ? 'image/jpeg' : type === 14 ? 'image/png' : type === 27 ? 'image/bmp' : imageValue(v).mime;
+const imageMime = (type: number, v: Uint8Array) => (type === 13 ? 'image/jpeg' : type === 14 ? 'image/png' : type === 27 ? 'image/bmp' : imageValue(v).mime);
 
 function ilstSpec(key: string, id: string, def: IlstDef | undefined): FieldSpec {
   const label = def?.label ?? `Tag ${showFourcc(key)}`;
@@ -919,7 +932,13 @@ function ilstSpec(key: string, id: string, def: IlstDef | undefined): FieldSpec 
     kind,
     sensitivity: def?.sens,
     tag: showFourcc(key),
-    options: def?.kind === 'bool' ? [{ value: '1', label: 'Yes' }, { value: '0', label: 'No' }] : undefined,
+    options:
+      def?.kind === 'bool'
+        ? [
+            { value: '1', label: 'Yes' },
+            { value: '0', label: 'No' },
+          ]
+        : undefined,
     placeholder: def?.kind === 'pair' ? 'e.g. 3/12' : undefined,
   };
 }
@@ -1192,7 +1211,10 @@ function keyLabel(key: string): string {
   const def = MDTA[key];
   if (def) return def.label;
   const last = key.split('.').pop() ?? key;
-  return last.replace(/[-_]/g, ' ').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, (c) => c.toUpperCase());
+  return last
+    .replace(/[-_]/g, ' ')
+    .replace(/([a-z])([A-Z])/g, '$1 $2')
+    .replace(/^./, (c) => c.toUpperCase());
 }
 
 function keySens(key: string): Sensitivity | undefined {
@@ -1316,7 +1338,9 @@ function writeMdta(loc: MdtaLoc): void {
   w.bytes(fullHead(0)).u32(live.length);
   for (const e of live) {
     const k = encodeUtf8(e.key);
-    w.u32(k.length + 8).ascii(e.ns).bytes(k);
+    w.u32(k.length + 8)
+      .ascii(e.ns)
+      .bytes(k);
   }
   const keys: BoxNode = { type: 'keys', data: w.finish() };
   const items = live.map((e, i) => ({ ...e.item!, type: latin1(u32(i + 1)) }));
@@ -1432,7 +1456,9 @@ function lociPayload(l: Loci, g: { lat: number; lon: number; alt?: number | null
   const fx = (n: number) => Math.round(n * 65536);
   const w = new Writer(false, 64);
   w.bytes(fullHead(0)).u16(l.lang).bytes(encodeUtf8(l.name)).u8(0).u8(l.role);
-  w.i32(fx(g.lon)).i32(fx(g.lat)).i32(fx(g.alt ?? 0));
+  w.i32(fx(g.lon))
+    .i32(fx(g.lat))
+    .i32(fx(g.alt ?? 0));
   w.bytes(l.rest.length ? l.rest : new Uint8Array([0x65, 0x61, 0x72, 0x74, 0x68, 0, 0])); // "earth\0" + notes
   return w.finish();
 }
@@ -1527,7 +1553,9 @@ function vendorField(e: UdtaEntry): Field {
   if (t === 'chpl' && e.node.data && e.node.data.length > 8) display = `${e.node.data[8]} chapters`;
   const d = e.node.data;
   if (d && d.length && d.length < 64 && isPrintable(d.subarray(0, d.indexOf(0) >= 0 ? d.indexOf(0) : d.length))) {
-    const s = utf8OrLatin1(d).replace(/\0[\s\S]*$/, '').trim();
+    const s = utf8OrLatin1(d)
+      .replace(/\0[\s\S]*$/, '')
+      .trim();
     if (s.length >= 2) display = s;
   }
   return rawField(e.id, label, display, {
@@ -1555,7 +1583,11 @@ function applyUdtaEdits(moov: BoxNode, edits: Edits): boolean {
   if (!relevant.length && !removeAll) return false;
   let udta = child(moov, 'udta');
   if (removeAll && udta) {
-    const shown = new Set(udtaEntries(udta).filter((e) => ['text', '3gp'].includes(classifyUdta(e.node))).map((e) => e.node));
+    const shown = new Set(
+      udtaEntries(udta)
+        .filter((e) => ['text', '3gp'].includes(classifyUdta(e.node)))
+        .map((e) => e.node),
+    );
     removeChildren(udta, (c) => shown.has(c));
   }
   for (const [id, edit] of relevant) {
@@ -1577,7 +1609,12 @@ function applyUdtaEdits(moov: BoxNode, edits: Edits): boolean {
       if (GPP_STRING.has(type)) {
         const s = gppString(old, 6);
         const tail = type === 'albm' && s.next < old.length ? old.subarray(s.next, s.next + 1) : new Uint8Array(0);
-        data = new Writer(false, 64).bytes(old.subarray(0, 6)).bytes(encodeUtf8(asText(edit.value, label))).u8(0).bytes(tail).finish();
+        data = new Writer(false, 64)
+          .bytes(old.subarray(0, 6))
+          .bytes(encodeUtf8(asText(edit.value, label)))
+          .u8(0)
+          .bytes(tail)
+          .finish();
       } else if (type === 'yrrc') {
         const y = asInteger(edit.value, label);
         if (y < 0 || y > 0xffff) throw new MetadataError(`${label}: invalid year`);
@@ -1620,7 +1657,16 @@ function xmpOf(f: Mp4, moov: BoxNode): XmpLoc {
 
 // ------------------------------------------------------------------ reading
 
-const trackLabel = (t: Track) => (t.handler === 'vide' ? 'Video' : t.handler === 'soun' ? 'Audio' : t.handler === 'sbtl' || t.handler === 'subt' || t.handler === 'text' ? 'Subtitles' : t.handler === 'tmcd' ? 'Timecode' : 'Track');
+const trackLabel = (t: Track) =>
+  t.handler === 'vide'
+    ? 'Video'
+    : t.handler === 'soun'
+      ? 'Audio'
+      : t.handler === 'sbtl' || t.handler === 'subt' || t.handler === 'text'
+        ? 'Subtitles'
+        : t.handler === 'tmcd'
+          ? 'Timecode'
+          : 'Track';
 
 function timedMetaLabel(t: Track): string {
   const what = CODECS[t.entry] ?? (t.entry ? showFourcc(t.entry) : 'metadata');
@@ -1659,7 +1705,10 @@ export async function readMp4(src: Source): Promise<Metadata> {
       info.push({ label: 'Video', value: `${t.codec}${t.width ? ` · ${t.width} × ${t.height}` : ''}${fps}` });
     } else if (t.handler === 'soun') {
       const ch = channelText(t.channels);
-      info.push({ label: 'Audio', value: `${t.codec}${t.sampleRate ? ` · ${Math.round(t.sampleRate).toLocaleString('en-US')} Hz` : ''}${ch ? ` · ${ch}` : ''}` });
+      info.push({
+        label: 'Audio',
+        value: `${t.codec}${t.sampleRate ? ` · ${Math.round(t.sampleRate).toLocaleString('en-US')} Hz` : ''}${ch ? ` · ${ch}` : ''}`,
+      });
     } else if (isTimedMeta(t)) {
       info.push({ label: 'Timed metadata', value: CODECS[t.entry] ?? showFourcc(t.entry || t.handler) });
     } else if (t.handler) {
@@ -1736,15 +1785,19 @@ export async function readMp4(src: Source): Promise<Metadata> {
   for (const c of moov.children ?? []) {
     if (c.type === 'uuid' && c.uuid) {
       const hex = Array.from(c.uuid, (x) => x.toString(16).padStart(2, '0')).join('');
-      other.push(rawField(`mp4:moov:uuid:${hex}`, 'Vendor data (uuid)', `${formatBytes(c.data?.length ?? 0)} · ${hex}`, { tag: 'moov/uuid', sensitivity: 'device' }));
+      other.push(
+        rawField(`mp4:moov:uuid:${hex}`, 'Vendor data (uuid)', `${formatBytes(c.data?.length ?? 0)} · ${hex}`, { tag: 'moov/uuid', sensitivity: 'device' }),
+      );
     } else if (c.type === 'meta' && c !== ilstLoc?.meta && c !== mdta?.meta) {
       other.push(rawField('mp4:moov:meta', `Metadata box (${showFourcc(handlerType(c) ?? '?')})`, `${c.children?.length ?? 0} boxes`, { tag: 'moov/meta' }));
     }
   }
   let data: TrackData[] | null = null;
   for (const t of tracks) {
-    if (child(t.trak, 'udta')) other.push(rawField(`mp4:trak:${t.id}:udta`, `Track ${t.id} user data`, `${child(t.trak, 'udta')!.children?.length ?? 0} entries`, { tag: 'trak/udta' }));
-    if (child(t.trak, 'meta')) other.push(rawField(`mp4:trak:${t.id}:meta`, `Track ${t.id} metadata`, `${child(t.trak, 'meta')!.children?.length ?? 0} boxes`, { tag: 'trak/meta' }));
+    if (child(t.trak, 'udta'))
+      other.push(rawField(`mp4:trak:${t.id}:udta`, `Track ${t.id} user data`, `${child(t.trak, 'udta')!.children?.length ?? 0} entries`, { tag: 'trak/udta' }));
+    if (child(t.trak, 'meta'))
+      other.push(rawField(`mp4:trak:${t.id}:meta`, `Track ${t.id} metadata`, `${child(t.trak, 'meta')!.children?.length ?? 0} boxes`, { tag: 'trak/meta' }));
     if (isTimedMeta(t)) {
       data ??= trackData(moov);
       const problem = removalProblem(f, moov, data, t.trak);
@@ -1828,7 +1881,10 @@ const newPlan = (): Plan => ({ remove: new Set(), replace: new Map(), afterMoov:
 
 function xmpUuidBox(xml: Uint8Array): Uint8Array {
   const w = new Writer(false, xml.length + 24);
-  w.u32(xml.length + 24).ascii('uuid').bytes(hexBytes(XMP_UUID)).bytes(xml);
+  w.u32(xml.length + 24)
+    .ascii('uuid')
+    .bytes(hexBytes(XMP_UUID))
+    .bytes(xml);
   return w.finish();
 }
 
@@ -1887,7 +1943,11 @@ function applyRawRemovals(f: Mp4, moov: BoxNode, edits: Edits, plan: Plan): void
     if (e.op !== 'remove') continue;
     if (id === 'mp4:trailer') plan.dropTrailing = true;
     const tm = /^mp4:trak:(\d+):timed$/.exec(id);
-    const track = tm && childrenOf(moov, 'trak').map(trackOf).find((t) => t.id === +tm[1] && isTimedMeta(t));
+    const track =
+      tm &&
+      childrenOf(moov, 'trak')
+        .map(trackOf)
+        .find((t) => t.id === +tm[1] && isTimedMeta(t));
     if (track) {
       const problem = removalProblem(f, moov, data(), track.trak);
       if (problem) throw new MetadataError(`${timedMetaLabel(track)} cannot be removed: ${problem}`);
@@ -2101,7 +2161,12 @@ export async function stripMp4(src: Source, opts: StripOptions): Promise<Blob> {
   // Keep chapters (moov/udta/chpl), and cover art when asked — wherever the
   // iTunes tags were (udta/meta or moov/meta), it goes back to udta/meta.
   const ilst = findIlst(moov);
-  const covers = opts.keepCoverArt && ilst ? childrenOf(ilst.ilst, 'covr').map((c) => container('covr', childrenOf(c, 'data'))).filter((c) => c.children!.length) : [];
+  const covers =
+    opts.keepCoverArt && ilst
+      ? childrenOf(ilst.ilst, 'covr')
+          .map((c) => container('covr', childrenOf(c, 'data')))
+          .filter((c) => c.children!.length)
+      : [];
   const udta = child(moov, 'udta');
   if (udta) removeChildren(udta, (c) => c.type !== 'chpl');
   removeChildren(moov, (c) => c.type === 'meta' || c.type === 'uuid' || PADDING.has(c.type));
@@ -2121,7 +2186,8 @@ export async function stripMp4(src: Source, opts: StripOptions): Promise<Blob> {
 
 // ---------------------------------------------------------------- detect
 
-const MP4_BRANDS = /^(iso[2-9a-z]|isom|mp4[12]|mp71|avc1|M4[ABPV] |M4V[HP]|qt {2}|3g[2gp]\w|3ge\w|3gs\w|dash|msdh|msix|cmf[c2]|MSNV|NDAS|XAVC|mmp4|f4[vp ab]|kddi|dby1|hvc1|av01|isml|piff|nvr1|FACE|mqt |CAEP|caqv|sdv |JVC |NX\w\w)/;
+const MP4_BRANDS =
+  /^(iso[2-9a-z]|isom|mp4[12]|mp71|avc1|M4[ABPV] |M4V[HP]|qt {2}|3g[2gp]\w|3ge\w|3gs\w|dash|msdh|msix|cmf[c2]|MSNV|NDAS|XAVC|mmp4|f4[vp ab]|kddi|dby1|hvc1|av01|isml|piff|nvr1|FACE|mqt |CAEP|caqv|sdv |JVC |NX\w\w)/;
 
 export const mp4Handler: FormatHandler = {
   id: 'mp4',

@@ -141,9 +141,7 @@ export function pyText(rep: PyZipReport, part: string, tag: string): string | un
 
 /** Convert a document to plain text with textutil (throws when it cannot). */
 export function textutilText(bytes: Uint8Array, ext: string): string {
-  return withFile(bytes, `doc.${ext}`, (p) =>
-    execFileSync('textutil', ['-convert', 'txt', '-stdout', p], { encoding: 'utf8', timeout: 60_000 }),
-  );
+  return withFile(bytes, `doc.${ext}`, (p) => execFileSync('textutil', ['-convert', 'txt', '-stdout', p], { encoding: 'utf8', timeout: 60_000 }));
 }
 
 // --------------------------------------------------------------- QuickLook
@@ -170,5 +168,11 @@ export function qlRender(bytes: Uint8Array, ext = 'svg', size = 128): Uint8Array
 export async function exiftoolPart(zip: Uint8Array, part: string): Promise<EtTags> {
   const data = unzipSync(zip, { filter: (f) => f.name === part })[part];
   if (!data) throw new Error(`${part} not found in archive`);
-  return exiftool(data, `${part.split('/').pop()!.replace(/\.\w+$/, '')}.xml`);
+  return exiftool(
+    data,
+    `${part
+      .split('/')
+      .pop()!
+      .replace(/\.\w+$/, '')}.xml`,
+  );
 }

@@ -273,12 +273,11 @@ describe('mp3', () => {
     expect(contains(bytes, MARK)).toBe(false);
     const et = await exiftool(bytes, 'out.mp3');
     expect(etProblems(et)).toEqual([]);
-    expect(etMetaKeys(et).filter((k) => !k.startsWith('MPEG:')).sort()).toEqual([
-      'ID3v2_3:Picture',
-      'ID3v2_3:PictureDescription',
-      'ID3v2_3:PictureMIMEType',
-      'ID3v2_3:PictureType',
-    ]);
+    expect(
+      etMetaKeys(et)
+        .filter((k) => !k.startsWith('MPEG:'))
+        .sort(),
+    ).toEqual(['ID3v2_3:Picture', 'ID3v2_3:PictureDescription', 'ID3v2_3:PictureMIMEType', 'ID3v2_3:PictureType']);
     const m = await reread(out);
     expect(allFields(m).map((f) => f.id)).toEqual(['id3:APIC:0']);
     await sameAudio(out, 'audio/rich.mp3');

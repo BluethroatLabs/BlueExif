@@ -248,7 +248,13 @@ export async function rewriteZip(zip: ZipArchive, opts: RewriteOptions): Promise
       .u32(crc)
       .u32(comp.length)
       .u32(data.length);
-    cw.u16(nameBytes.length).u16(0).u16(0).u16(0).u16(base?.internalAttrs ?? 0).u32(base?.externalAttrs ?? 0).u32(offset);
+    cw.u16(nameBytes.length)
+      .u16(0)
+      .u16(0)
+      .u16(0)
+      .u16(base?.internalAttrs ?? 0)
+      .u32(base?.externalAttrs ?? 0)
+      .u32(offset);
     cw.bytes(nameBytes);
     central.push(cw.finish());
     parts.push(local, comp);

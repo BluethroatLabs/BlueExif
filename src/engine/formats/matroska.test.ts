@@ -6,18 +6,7 @@ import { afterAll, describe, expect, it } from 'vitest';
 import { concat, indexOfBytes } from '../core/binary';
 import { MetadataError, Source, groupKey, type ImageValue, type Metadata } from '../core/types';
 import { REMOVE, allFields, bytesOf, edits, etFind, etProblems, exiftool, field, fixture, fixtureBytes, strip } from '../test/helpers';
-import {
-  UNKNOWN_SIZE,
-  element,
-  encodeId,
-  encodeSize,
-  floatElement,
-  parseChildren,
-  readHeader,
-  readUint,
-  stringElement,
-  uintElement,
-} from './ebml';
+import { UNKNOWN_SIZE, element, encodeId, encodeSize, floatElement, parseChildren, readHeader, readUint, stringElement, uintElement } from './ebml';
 import { NEUTRAL_APP, matroskaHandler } from './matroska';
 
 const MARK = 'SECRET-MARKER-42';
@@ -315,12 +304,7 @@ describe('matroska', () => {
     expect(et['Matroska:AttachedFileName']).toBe('font.ttf');
 
     const m = await read(out);
-    expect(allFields(m).map((f) => f.id)).toEqual([
-      'mkv:muxingapp',
-      'mkv:writingapp',
-      'mkv:segmentuid',
-      expect.stringMatching(/^mkv:attachment:\d+$/),
-    ]);
+    expect(allFields(m).map((f) => f.id)).toEqual(['mkv:muxingapp', 'mkv:writingapp', 'mkv:segmentuid', expect.stringMatching(/^mkv:attachment:\d+$/)]);
     const p = ffprobe(out, 'mkv');
     expect(p.chapters).toHaveLength(2);
     expect(p.streams.map((s) => s.codec_name)).toEqual(['h264', 'aac', 'ttf']);
@@ -336,10 +320,29 @@ describe('matroska', () => {
     const notes = join(tmp, 'notes.txt');
     writeFileSync(notes, `Shot by Jane Doe ${MARK}`);
     const withNotes = join(tmp, 'notes.mkv');
-    const r = spawnSync('ffmpeg', ['-v', 'error', '-y', '-i', save(fixtureBytes('video/tagged.mkv'), 'mkv'), '-attach', notes, '-metadata:s:4', 'mimetype=text/plain', '-map', '0', '-c', 'copy', withNotes], {
-      encoding: 'utf8',
-      timeout: 30_000,
-    });
+    const r = spawnSync(
+      'ffmpeg',
+      [
+        '-v',
+        'error',
+        '-y',
+        '-i',
+        save(fixtureBytes('video/tagged.mkv'), 'mkv'),
+        '-attach',
+        notes,
+        '-metadata:s:4',
+        'mimetype=text/plain',
+        '-map',
+        '0',
+        '-c',
+        'copy',
+        withNotes,
+      ],
+      {
+        encoding: 'utf8',
+        timeout: 30_000,
+      },
+    );
     expect(r.stderr).toBe('');
     const src = new Source(new Blob([readFileSync(withNotes)]), 'notes.mkv');
     const m = await read(new Uint8Array(readFileSync(withNotes)));
@@ -356,7 +359,10 @@ describe('matroska', () => {
     const before = await read(fixtureBytes('video/tagged.mkv'));
     const coverId = allFields(before).find((f) => f.kind === 'image')!.id;
     const png = fixturePng();
-    const out = await matroskaHandler.write!(fixture('video/tagged.mkv'), edits({ [coverId]: { mime: 'image/png', data: png }, [groupKey('mkv.tags.50')]: REMOVE }));
+    const out = await matroskaHandler.write!(
+      fixture('video/tagged.mkv'),
+      edits({ [coverId]: { mime: 'image/png', data: png }, [groupKey('mkv.tags.50')]: REMOVE }),
+    );
     const m = await read(out);
     const cover = field(m, coverId);
     expect((cover?.value as ImageValue).mime).toBe('image/png');
@@ -484,10 +490,7 @@ describe('matroska', () => {
 
 /** Smallest valid PNG (1×1). */
 function fixturePng(): Uint8Array {
-  return Uint8Array.from(
-    atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='),
-    (c) => c.charCodeAt(0),
-  );
+  return Uint8Array.from(atob('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=='), (c) => c.charCodeAt(0));
 }
 
 /** Matroska with Cluster Position elements, Cues and an unknown-size-free layout. */
@@ -496,14 +499,22 @@ function syntheticMkv(): Uint8Array {
   const info = element(0x1549a966, uintElement(0x2ad7b1, 1_000_000), stringElement(0x4d80, 'x'), stringElement(0x5741, 'x'), floatElement(0x4489, 200));
   const tracks = element(
     0x1654ae6b,
-    element(0xae, uintElement(0xd7, 1), uintElement(0x73c5, 1), uintElement(0x83, 1), stringElement(0x86, 'V_UNCOMPRESSED'), element(0xe0, uintElement(0xb0, 2), uintElement(0xba, 2))),
+    element(
+      0xae,
+      uintElement(0xd7, 1),
+      uintElement(0x73c5, 1),
+      uintElement(0x83, 1),
+      stringElement(0x86, 'V_UNCOMPRESSED'),
+      element(0xe0, uintElement(0xb0, 2), uintElement(0xba, 2)),
+    ),
   );
   const block = (t: number) => element(0xa3, new Uint8Array([0x81, 0, t, 0x80, 1, 2, 3, 4]));
   const cluster = (ts: number, pos: number) => element(ID_CLUSTER, uintElement(0xe7, ts), uintElement(0xa7, pos, 4), block(0));
   const head = info.length + tracks.length;
   const c1 = cluster(0, head);
   const c2 = cluster(100, head + c1.length);
-  const cue = (t: number, pos: number) => element(0xbb, uintElement(0xb3, t), element(0xb7, uintElement(0xf7, 1), uintElement(0xf1, pos), uintElement(0xf0, 9)));
+  const cue = (t: number, pos: number) =>
+    element(0xbb, uintElement(0xb3, t), element(0xb7, uintElement(0xf7, 1), uintElement(0xf1, pos), uintElement(0xf0, 9)));
   const cues = element(ID_CUES, cue(0, head), cue(100, head + c1.length));
   const body = [info, tracks, c1, c2, cues];
   const size = body.reduce((n, x) => n + x.length, 0);

@@ -187,7 +187,12 @@ function DateEditor({ spec, value, onChange, onValidity, allowEmpty, autoFocus }
           onChange={(e) => commit(e.target.value)}
         />
         <span className="date-pick">
-          <button className="icon-btn" type="button" aria-label={`Pick ${spec.label.toLowerCase()} from a calendar`} onClick={() => picker.current?.showPicker?.()}>
+          <button
+            className="icon-btn"
+            type="button"
+            aria-label={`Pick ${spec.label.toLowerCase()} from a calendar`}
+            onClick={() => picker.current?.showPicker?.()}
+          >
             <Icon name="calendar" size="sm" />
           </button>
           <input
@@ -290,6 +295,7 @@ function ListEditor({ spec, value, onChange, autoFocus }: EditorProps) {
 // -------------------------------------------------------------------- gps
 
 // Very rough continent outlines (lon, lat) — enough to orient the pin offline.
+// biome-ignore format: hand-packed table
 const LAND: number[][] = [
   [-168, 66, -162, 70, -140, 70, -120, 72, -95, 72, -80, 68, -62, 60, -55, 52, -66, 44, -70, 41, -76, 35, -81, 31, -80, 25, -82, 29, -90, 30, -97, 27, -97, 21, -87, 21, -88, 16, -83, 10, -79, 8, -84, 14, -92, 15, -105, 20, -112, 30, -117, 32, -124, 40, -124, 48, -133, 57, -150, 60, -158, 57, -165, 62],
   [-79, 8, -72, 12, -62, 10, -50, 0, -35, -6, -39, -14, -41, -22, -48, -26, -53, -34, -58, -38, -65, -42, -68, -50, -70, -55, -74, -50, -73, -40, -71, -30, -70, -18, -76, -14, -81, -5, -80, 0],

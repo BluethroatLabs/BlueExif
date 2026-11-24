@@ -135,7 +135,10 @@ describe('ogg', () => {
   });
 
   it('edits Vorbis comments in place (same page count)', async () => {
-    const out = await oggHandler.write!(fixture('audio/vorbis.ogg'), edits({ 'vorbis:TITLE': 'Neu', 'vorbis:DESCRIPTION': REMOVE, 'vorbis:ARTIST': ['Анна', 'Bob'] }));
+    const out = await oggHandler.write!(
+      fixture('audio/vorbis.ogg'),
+      edits({ 'vorbis:TITLE': 'Neu', 'vorbis:DESCRIPTION': REMOVE, 'vorbis:ARTIST': ['Анна', 'Bob'] }),
+    );
     const bytes = await bytesOf(out);
     expect(contains(bytes, MARK)).toBe(false);
     const et = await exiftool(bytes, 'out.ogg');
@@ -152,7 +155,10 @@ describe('ogg', () => {
 
   it('re-paginates and renumbers when the comment header grows over several pages', async () => {
     for (const rel of ['audio/vorbis.ogg', 'audio/opus.opus', 'audio/flac.oga']) {
-      const out = await oggHandler.write!(fixture(rel), edits({ 'vorbis:picture:new': { mime: 'image/png', data: BIG, description: 'big' }, 'vorbis:TITLE': 'grown' }));
+      const out = await oggHandler.write!(
+        fixture(rel),
+        edits({ 'vorbis:picture:new': { mime: 'image/png', data: BIG, description: 'big' }, 'vorbis:TITLE': 'grown' }),
+      );
       const bytes = await bytesOf(out);
       const pg = pages(bytes);
       expect(pg.length).toBeGreaterThan(pages(fixtureBytes(rel)).length + 2);
@@ -186,7 +192,10 @@ describe('ogg', () => {
     expect(etProblems(et)).toEqual([]);
     expect(et['Vorbis:Artist']).toBe('Opus Person');
     await sameAudio(out, 'audio/opus.opus');
-    const fl = await oggHandler.write!(fixture('audio/flac.oga'), edits({ 'vorbis:ALBUM': 'FLAC Album', 'vorbis:picture:new': { mime: 'image/jpeg', data: fixtureBytes('jpeg/plain.jpg') } }));
+    const fl = await oggHandler.write!(
+      fixture('audio/flac.oga'),
+      edits({ 'vorbis:ALBUM': 'FLAC Album', 'vorbis:picture:new': { mime: 'image/jpeg', data: fixtureBytes('jpeg/plain.jpg') } }),
+    );
     const et2 = await exiftool(fl, 'out.oga');
     expect(etProblems(et2)).toEqual([]);
     expect(et2['Vorbis:Album']).toBe('FLAC Album');
@@ -205,7 +214,9 @@ describe('ogg', () => {
       expect(contains(bytes, 'Lavf')).toBe(false);
       const et = await exiftool(bytes, name);
       expect(etProblems(et)).toEqual([]);
-      expect(etMetaKeys(et).filter((k) => k.startsWith('Vorbis:') && !/^Vorbis:(VorbisVersion|AudioChannels|SampleRate|Nominal|Maximum|Minimum|Vendor)/.test(k))).toEqual([]);
+      expect(
+        etMetaKeys(et).filter((k) => k.startsWith('Vorbis:') && !/^Vorbis:(VorbisVersion|AudioChannels|SampleRate|Nominal|Maximum|Minimum|Vendor)/.test(k)),
+      ).toEqual([]);
       const m = await oggHandler.read(new Source(out));
       expect(allFields(m)).toEqual([]);
       await sameAudio(out, rel);
@@ -229,7 +240,14 @@ describe('ogg', () => {
     expect(at.length).toBe(3);
     const seg = (p: number) => b.subarray(p + 27, p + 27 + b[p + 26]);
     const body = (p: number, end: number) => b.subarray(p + 27 + b[p + 26], end);
-    const merged = buildPage(4, b.subarray(at[2] + 6, at[2] + 14), v.getUint32(14, true), 1, concat([seg(at[1]), seg(at[2])]), concat([body(at[1], at[2]), body(at[2], b.length)]));
+    const merged = buildPage(
+      4,
+      b.subarray(at[2] + 6, at[2] + 14),
+      v.getUint32(14, true),
+      1,
+      concat([seg(at[1]), seg(at[2])]),
+      concat([body(at[1], at[2]), body(at[2], b.length)]),
+    );
     const src = concat([b.subarray(0, at[1]), merged]);
     expect(decode(src, 'm.ogg').md5).toBe(decode(b, 'x.ogg').md5);
     const out = await oggHandler.write!(new Source(new Blob([src as BlobPart])), edits({ 'vorbis:TITLE': 'Split' }));
@@ -245,7 +263,10 @@ describe('ogg', () => {
     const b = fixtureBytes('audio/opus.opus');
     const firstPage = (x: Uint8Array) => 27 + x[26] + [...x.subarray(27, 27 + x[26])].reduce((m, n) => m + n, 0);
     const chained = new Source(new Blob([concat([a, b]) as BlobPart]), 'c.ogg');
-    const muxed = new Source(new Blob([concat([a.subarray(0, firstPage(a)), b.subarray(0, firstPage(b)), a.subarray(firstPage(a)), b.subarray(firstPage(b))]) as BlobPart]), 'm.ogg');
+    const muxed = new Source(
+      new Blob([concat([a.subarray(0, firstPage(a)), b.subarray(0, firstPage(b)), a.subarray(firstPage(a)), b.subarray(firstPage(b))]) as BlobPart]),
+      'm.ogg',
+    );
     for (const src of [chained, muxed]) {
       const m = await oggHandler.read(src);
       expect(m.canWrite).toBe(false);

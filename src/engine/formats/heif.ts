@@ -423,7 +423,18 @@ function colrText(p: BoxNode): string | null {
     const r = new Reader(d);
     const [pri, tr, mx] = [r.u16(4), r.u16(6), r.u16(8)];
     const full = d[10] & 0x80 ? 'full range' : 'limited range';
-    const named = pri === 1 && tr === 13 ? 'sRGB' : pri === 12 && tr === 13 ? 'Display P3' : pri === 9 && tr === 16 ? 'BT.2100 PQ' : pri === 9 && tr === 18 ? 'BT.2100 HLG' : pri === 1 && tr === 1 ? 'BT.709' : null;
+    const named =
+      pri === 1 && tr === 13
+        ? 'sRGB'
+        : pri === 12 && tr === 13
+          ? 'Display P3'
+          : pri === 9 && tr === 16
+            ? 'BT.2100 PQ'
+            : pri === 9 && tr === 18
+              ? 'BT.2100 HLG'
+              : pri === 1 && tr === 1
+                ? 'BT.709'
+                : null;
     return `${named ?? `primaries ${pri}, transfer ${tr}`}, matrix ${mx}, ${full}`;
   }
   if (kind === 'prof' || kind === 'rICC') return iccDescription(d.subarray(4)) ?? 'Embedded ICC profile';
@@ -597,7 +608,10 @@ function iinfBox(version: number, items: Item[]): BoxNode {
   w.bytes(fullHead(v));
   if (v === 0) w.u16(items.length);
   else w.u32(items.length);
-  for (const it of items) w.u32(it.raw.length + 8).ascii('infe').bytes(it.raw);
+  for (const it of items)
+    w.u32(it.raw.length + 8)
+      .ascii('infe')
+      .bytes(it.raw);
   return { type: 'iinf', data: w.finish() };
 }
 
@@ -722,7 +736,10 @@ async function rebuild(src: Source, h: Heif, plan: Plan): Promise<Blob> {
     if (loc) zeroItem(loc);
     items = items.filter((i) => i.id !== id);
     iloc.items = iloc.items.filter((i) => i.id !== id);
-    refs = refs.filter((r) => r.from !== id).map((r) => ({ ...r, to: r.to.filter((t) => t !== id) })).filter((r) => r.to.length);
+    refs = refs
+      .filter((r) => r.from !== id)
+      .map((r) => ({ ...r, to: r.to.filter((t) => t !== id) }))
+      .filter((r) => r.to.length);
     assoc.delete(id);
   };
   const appendTo = (loc: IlocItem, data: Uint8Array) => {
@@ -790,7 +807,11 @@ async function rebuild(src: Source, h: Heif, plan: Plan): Promise<Blob> {
         if (!drop.has(i + 1)) remap.set(i + 1, ++n);
       });
       props = props.filter((_, i) => !drop.has(i + 1));
-      for (const [id, list] of assoc) assoc.set(id, list.filter((a) => !drop.has(a.index)).map((a) => ({ ...a, index: remap.get(a.index) ?? a.index })));
+      for (const [id, list] of assoc)
+        assoc.set(
+          id,
+          list.filter((a) => !drop.has(a.index)).map((a) => ({ ...a, index: remap.get(a.index) ?? a.index })),
+        );
     }
   }
 

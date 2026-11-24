@@ -21,7 +21,8 @@ function Preview({ file }: { file: FileEntry }) {
   let inner;
   if (pdf.page) inner = <img className="pdf-page" src={pdf.page.url} width={pdf.page.width} height={pdf.page.height} alt={`First page of ${file.name}`} />;
   else if (cat === 'image' && file.previewUrl) inner = <img src={file.previewUrl} alt="" />;
-  else if (cat === 'video' && file.previewUrl) inner = <video src={file.previewUrl} controls muted preload="metadata" playsInline aria-label={`Preview of ${file.name}`} />;
+  else if (cat === 'video' && file.previewUrl)
+    inner = <video src={file.previewUrl} controls muted preload="metadata" playsInline aria-label={`Preview of ${file.name}`} />;
   else if (picUrl) inner = <img className="cover" src={picUrl} alt="" />;
   else inner = <Icon name={categoryIcon(meta)} />;
   return (
@@ -197,7 +198,12 @@ export function FilePanel({ file }: { file: FileEntry }) {
             )}
           </div>
           {sensFilter && (
-            <button className="filter-chip" type="button" onClick={() => setSensitivityFilter(sensFilter)} aria-label={`Show all fields, not only ${SENS[sensFilter].label.toLowerCase()}`}>
+            <button
+              className="filter-chip"
+              type="button"
+              onClick={() => setSensitivityFilter(sensFilter)}
+              aria-label={`Show all fields, not only ${SENS[sensFilter].label.toLowerCase()}`}
+            >
               {SENS[sensFilter].label} <Icon name="x" size="sm" />
             </button>
           )}
@@ -250,7 +256,9 @@ export function FilePanel({ file }: { file: FileEntry }) {
       {!hasFields && !pending && (
         <div className="empty-groups">
           <h3>No metadata</h3>
-          <p>This file carries no {readOnly ? '' : 'editable '}metadata.{readOnly ? '' : ' You can still add fields below.'}</p>
+          <p>
+            This file carries no {readOnly ? '' : 'editable '}metadata.{readOnly ? '' : ' You can still add fields below.'}
+          </p>
         </div>
       )}
 

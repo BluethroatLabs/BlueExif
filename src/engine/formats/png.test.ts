@@ -193,7 +193,10 @@ describe('png', () => {
     await bytesOf(await pngHandler.strip!(Source.fromBytes(padded), strip()));
     // Compressed text shares one budget per file: the first 40 MB chunk fits, the second does not.
     const bomb = new Uint8Array(Buffer.concat([Buffer.from('Comment\0\0', 'latin1'), zlibSync(new Uint8Array(40 << 20))]));
-    const two = withChunks(plain, [['zTXt', bomb], ['zTXt', bomb]]);
+    const two = withChunks(plain, [
+      ['zTXt', bomb],
+      ['zTXt', bomb],
+    ]);
     const m = await read(two);
     expect(m.warnings).toEqual(['Text chunk could not be read: compressed data expands to more than 24 MB']);
     expect(chunkTypes(await bytesOf(await pngHandler.strip!(Source.fromBytes(two), strip())))).not.toContain('zTXt');
@@ -234,7 +237,12 @@ describe('png', () => {
   it('keeps APNG animation chunks on edit and strip', async () => {
     const m = await pngHandler.read(fixture('images/anim.png'));
     expect(m.format.name).toBe('Animated PNG');
-    expect(m.info).toEqual(expect.arrayContaining([{ label: 'Frames', value: '3' }, { label: 'Loop', value: 'Forever' }]));
+    expect(m.info).toEqual(
+      expect.arrayContaining([
+        { label: 'Frames', value: '3' },
+        { label: 'Loop', value: 'Forever' },
+      ]),
+    );
     expect(field(m, 'png:text:Title')?.value).toBe(`Anim ${MARKER}`);
 
     const src = fixtureBytes('images/anim.png');

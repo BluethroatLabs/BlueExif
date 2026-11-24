@@ -46,16 +46,7 @@ import {
   requireDate,
   type DateParts,
 } from '../core/fields';
-import {
-  MetadataError,
-  type Edits,
-  type Field,
-  type FieldGroup,
-  type FieldSpec,
-  type FieldValue,
-  type ImageValue,
-  type Sensitivity,
-} from '../core/types';
+import { MetadataError, type Edits, type Field, type FieldGroup, type FieldSpec, type FieldValue, type ImageValue, type Sensitivity } from '../core/types';
 
 // ------------------------------------------------------------- structures
 
@@ -115,6 +106,7 @@ export function deunsync(b: Uint8Array): Uint8Array {
 }
 
 // v2.2 three-character ids -> v2.3/2.4 ids
+// biome-ignore format: hand-packed table
 const V22: Record<string, string> = {
   TT1: 'TIT1', TT2: 'TIT2', TT3: 'TIT3', TP1: 'TPE1', TP2: 'TPE2', TP3: 'TPE3', TP4: 'TPE4', TCM: 'TCOM',
   TXT: 'TEXT', TLA: 'TLAN', TCO: 'TCON', TAL: 'TALB', TPA: 'TPOS', TRK: 'TRCK', TRC: 'TSRC', TYE: 'TYER',
@@ -435,6 +427,7 @@ function apicBody(a: Apic, version: number): Uint8Array {
 // ----------------------------------------------------------------- genres
 
 /** ID3v1 genre list (incl. Winamp extensions). */
+// biome-ignore format: hand-packed table
 export const GENRES: string[] = [
   'Blues', 'Classic Rock', 'Country', 'Dance', 'Disco', 'Funk', 'Grunge', 'Hip-Hop', 'Jazz', 'Metal', 'New Age',
   'Oldies', 'Other', 'Pop', 'R&B', 'Rap', 'Reggae', 'Rock', 'Techno', 'Industrial', 'Alternative', 'Ska',
@@ -802,7 +795,11 @@ export function id3Groups(tag: Id3Tag | null, opts: Id3GroupOptions = {}): Field
       const desc = userDesc(f);
       const vals = fs.flatMap(txxxValues);
       const s = { id: key, label: desc || 'User text', sensitivity: sensForDesc(desc), tag: `TXXX:${desc}` };
-      main.push(vals.length > 1 ? makeField({ ...s, kind: 'list' }, vals) : makeField({ ...s, kind: (vals[0] ?? '').length > 80 ? 'multiline' : 'text' }, vals[0] ?? ''));
+      main.push(
+        vals.length > 1
+          ? makeField({ ...s, kind: 'list' }, vals)
+          : makeField({ ...s, kind: (vals[0] ?? '').length > 80 ? 'multiline' : 'text' }, vals[0] ?? ''),
+      );
       continue;
     }
     if (isText(id)) {
@@ -1304,12 +1301,18 @@ export function serializeApe(t: ApeTag): Uint8Array {
   const body = items.finish();
   const block = (flags: number) => {
     const w = new Writer(true, 32);
-    w.ascii('APETAGEX').u32(2000).u32(body.length + 32).u32(t.items.length).u32(flags).zeros(8);
+    w.ascii('APETAGEX')
+      .u32(2000)
+      .u32(body.length + 32)
+      .u32(t.items.length)
+      .u32(flags)
+      .zeros(8);
     return w.finish();
   };
   return concat([block(0xa0000000), body, block(0x80000000)]);
 }
 
+// biome-ignore format: hand-packed table
 const APE_SENS: Record<string, Sensitivity> = {
   title: 'content', subtitle: 'content', album: 'content', comment: 'content', lyrics: 'content', genre: 'content',
   artist: 'identity', 'album artist': 'identity', albumartist: 'identity', composer: 'identity', conductor: 'identity',
