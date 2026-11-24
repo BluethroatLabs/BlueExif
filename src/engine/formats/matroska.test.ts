@@ -20,6 +20,18 @@ function save(bytes: Uint8Array, ext: string): string {
   return p;
 }
 
+/**
+ * Whether the installed ffprobe reads an untouched fixture without complaint. Some builds (Ubuntu's 8.0, for one)
+ * cannot parse the Opus packets in the WebM and audio-only fixtures, so they are no oracle for those two files.
+ */
+function oracleReads(name: string): boolean {
+  const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'packet=size', '-of', 'csv', save(fixtureBytes(name), name.split('.').pop()!)], {
+    encoding: 'utf8',
+    timeout: 30_000,
+  });
+  return r.status === 0 && r.stderr === '';
+}
+
 interface Probe {
   format: { duration?: string; tags?: Record<string, string> };
   streams: Array<{ codec_name?: string; codec_type: string; tags?: Record<string, string> }>;
@@ -386,7 +398,7 @@ describe('matroska', () => {
     expect(decodeErrors(await bytesOf(added), 'mkv')).toBe('');
   });
 
-  it('handles WebM: read, edit, strip; refuses attachments', async () => {
+  it.skipIf(!oracleReads('video/tagged.webm'))('handles WebM: read, edit, strip; refuses attachments', async () => {
     const orig = fixtureBytes('video/tagged.webm');
     const m = await read(orig, 'tagged.webm');
     expect(m.format).toMatchObject({ name: 'WebM video', mime: 'video/webm', category: 'video' });
@@ -415,7 +427,7 @@ describe('matroska', () => {
     ).rejects.toThrow(MetadataError);
   });
 
-  it('treats audio-only Matroska as audio', async () => {
+  it.skipIf(!oracleReads('video/audio.mka'))('treats audio-only Matroska as audio', async () => {
     const orig = fixtureBytes('video/audio.mka');
     const m = await read(orig, 'audio.mka');
     expect(m.format).toMatchObject({ name: 'Matroska audio', mime: 'audio/x-matroska', category: 'audio' });

@@ -251,12 +251,15 @@ describe('png', () => {
     expect(types.indexOf('eXIf')).toBeLessThan(types.indexOf('fcTL'));
     expect(imageData(edited).equals(imageData(src))).toBe(true);
     expect(await etAllProblems(edited, 'a.png')).toEqual([]);
-    expect(frameCount(edited, 'apng')).toBe(3);
+    // Some ffprobe builds (Ubuntu's 8.0, for one) report no frame count for an APNG with metadata ahead of acTL,
+    // the untouched fixture included; they are no oracle for it.
+    const oracleCounts = frameCount(src, 'apng') === 3;
+    if (oracleCounts) expect(frameCount(edited, 'apng')).toBe(3);
 
     const stripped = await bytesOf(await pngHandler.strip!(fixture('images/anim.png'), strip()));
     expect(containsText(stripped, MARKER)).toBe(false);
     expect(chunkTypes(stripped)).toEqual(['IHDR', 'pHYs', 'PLTE', 'acTL', 'fcTL', 'IDAT', 'fcTL', 'fdAT', 'fcTL', 'fdAT', 'IEND']);
-    expect(frameCount(stripped, 'apng')).toBe(3);
+    if (oracleCounts) expect(frameCount(stripped, 'apng')).toBe(3);
     expect(decodeErrors(stripped, 'apng')).toBe('');
   });
 });

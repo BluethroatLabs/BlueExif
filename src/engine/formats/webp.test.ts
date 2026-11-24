@@ -28,7 +28,8 @@ function webpinfoOk(b: Uint8Array): boolean {
 
 function checkImage(out: Uint8Array, original: Uint8Array) {
   expect(payload(out).equals(payload(original))).toBe(true);
-  expect(decodeErrors(out, 'webp')).toBe('');
+  // Some ffmpeg builds (Ubuntu's 8.0, for one) cannot decode animated WebP at all; they are no oracle for those files.
+  if (decodeErrors(original, 'webp') === '') expect(decodeErrors(out, 'webp')).toBe('');
   expect(webpinfoOk(out)).toBe(true);
   const riffSize = Buffer.from(out).readUInt32LE(4);
   expect(riffSize + 8).toBe(out.length);
@@ -171,13 +172,13 @@ describe('webp', () => {
     expect(et['XMP-dc:Title']).toBe('Loop');
     expect(et['IFD0:Artist']).toBeUndefined();
     checkImage(edited, src);
-    expect(frameCount(edited, 'webp')).toBe(3);
+    expect(frameCount(edited, 'webp')).toBe(frameCount(src, 'webp'));
 
     const stripped = await bytesOf(await webpHandler.strip!(fixture('images/anim.webp'), strip()));
     expect(containsText(stripped, MARKER)).toBe(false);
     expect(ids(stripped)).toEqual(['VP8X', 'ANIM', 'ANMF', 'ANMF', 'ANMF']);
     expect(flags(stripped)).toBe(0x02);
     checkImage(stripped, src);
-    expect(frameCount(stripped, 'webp')).toBe(3);
+    expect(frameCount(stripped, 'webp')).toBe(frameCount(src, 'webp'));
   });
 });
