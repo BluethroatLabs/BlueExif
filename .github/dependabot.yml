@@ -1,0 +1,30 @@
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    # Wait a week after a release before proposing it, so a bad publish has
+    # time to be yanked. Security updates ignore this.
+    cooldown:
+      default-days: 7
+    open-pull-requests-limit: 5
+    groups:
+      # One PR for everything semver-compatible; majors come one at a time.
+      npm-minor-patch:
+        update-types: [minor, patch]
+
+  # Workflows pin actions by commit SHA; Dependabot moves the SHA and the
+  # trailing version comment together.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    cooldown:
+      default-days: 7
+    groups:
+      actions:
+        patterns: ["*"]
