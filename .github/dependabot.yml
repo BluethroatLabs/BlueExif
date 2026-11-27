@@ -4,8 +4,7 @@ updates:
   - package-ecosystem: npm
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: daily
     # Wait a week after a release before proposing it, so a bad publish has
     # time to be yanked. Security updates ignore this.
     cooldown:
@@ -21,8 +20,7 @@ updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
-      interval: weekly
-      day: monday
+      interval: daily
     cooldown:
       default-days: 7
     groups:
